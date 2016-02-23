@@ -3,11 +3,11 @@
 <head>
     <title>Custom Grid</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Feb 22 2016 21:30:59 GMT-0700 (MST) -->
+    <!--  Build Date: Tue Feb 23 2016 07:56:25 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Feb 22 2016 21:30:59 GMT-0700 (MST)";
-        var CHECKSUM = 16050977231;
+        var APP_BUILD_DATE = "Tue Feb 23 2016 07:56:25 GMT-0700 (MST)";
+        var CHECKSUM = 16246236938;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -23,12 +23,15 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
     filterValue: undefined,
 
     getFilter: function(resultsRecordType, portfolioItemTypes){
-        //First verify that the selected portfolio item type is an ancestor to the selected grid type.
-        var modelType = this.filterModelType,
-            pi_types = _.map(portfolioItemTypes, function(pi){return pi.typePath.toLowerCase()}),
-            idx = _.indexOf(pi_types, modelType),
-            type_idx = _.indexOf(pi_types, resultsRecordType);
 
+        portfolioItemTypes = portfolioItemTypes || [];
+        resultsRecordType = resultsRecordType || this.filterModelType;
+
+        var modelType = this.filterModelType.toLowerCase(),
+            pi_types = portfolioItemTypes.length > 0 ? _.map(portfolioItemTypes, function(pi){return pi.typePath.toLowerCase()}) : [],
+            idx = _.indexOf(pi_types, modelType),
+            type_idx = _.indexOf(pi_types, resultsRecordType.toLowerCase());
+        console.log('idx', idx,type_idx);
         if (type_idx < idx) {
             var properties = [];
             for (var i = type_idx; i < idx; i++) {
