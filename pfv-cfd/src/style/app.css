@@ -1,0 +1,35 @@
+.app {
+}
+.tsinfolink {
+    position:absolute;
+    right:0px;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    text-align: center;
+    color: white;
+    background: #C0C0C0;
+    border-style: solid;
+    border-width: 1px;
+    margin-top: 25px;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.settingsLabel {
+    font-family: NotoSansBold, Helvetica, Arial;
+    font-weight: normal;
+    min-height: 20px;
+    text-transform: uppercase;
+}
+
+.settingsSubLabel {
+    font-family: NotoSans, Helvetica, Arial;
+    font-weight: normal;
+    font-size: 10px;
+    font-style: italic;
+    float: right;
+    align: right;
+    text-align: right;
+    color: #666666;
+}
