@@ -37,41 +37,8 @@ Ext.define("pfv-selector", {
     applyState: function(state) {
         if (!Ext.isEmpty(state) && !Ext.Object.isEmpty(state)) {
             console.log('applyState', state);
+            this.setDashboardFilter(state);
         }
-        //    var ref = Ext.create('Rally.util.Ref',state.portfolioItemRef),
-        //        type = ref.getType();
-        //
-        //    //don't apply the state if the type doesn't match.
-        //    if (this.type && this.type.toLowerCase() !== type.toLowerCase()){
-        //        this._updatePortfolioItem(null);
-        //        return;
-        //    }
-        //
-        //    Rally.data.ModelFactory.getModel({
-        //        type: type,
-        //        scope: this,
-        //        success: function(model) {
-        //            model.load(ref.getOid(),{
-        //                scope: this,
-        //                callback: function(result, operation){
-        //                    if (result && operation.wasSuccessful()){
-        //                        this._updatePortfolioItem(result);
-        //                    } else {
-        //                        this._updatePortfolioItem(null);
-        //                        Rally.ui.notify.Notifier.showError({message: 'Could not load state for item [' + state + ']: ' + operation.error && operation.error.errors.join(',')});
-        //                    }
-        //
-        //                }
-        //            });
-        //        },
-        //        failure: function(){
-        //            this._updatePortfolioItem(null);
-        //            Rally.ui.notify.Notifier.showError({message: 'Could not load state for item [' + state + ']'});
-        //        }
-        //    });
-        //} else {
-        //    this._updatePortfolioItem(null);
-        //}
     },
     _updateFilter: function(cb){
         if (cb){
@@ -80,21 +47,40 @@ Ext.define("pfv-selector", {
             df.filterField = this._getFieldName();
             df.filterFieldDisplayName = this._getFieldDisplayName();
             df.filterValue = cb.getValue();
-            this.dashboardFilter = df;
-            this.fireEvent('change', df);
-            this.publish(this.publishedEventName, df);
-            if (this.stateful && this.stateId){
-                this.saveState();
-            }
+            this.setDashboardFilter(df);
         }
-    }
-    ,
+    },
+    setDashboardFilter: function(df){
+        this.dashboardFilter = df;
+
+        var filters = df.getFilter(df.filterModelType, []);
+        Rally.technicalservices.WsapiToolbox.fetchWsapiCount(df.filterModelType, filters).then({
+            scope: this,
+            success: function(count){
+                this.resultsStatus.update({message: count + ' items found'});
+            },
+            failure: function(msg){
+                this.resultsStatus.update({message: 'Error: ' + msg});
+            }
+        });
+
+        this.fireEvent('change', df);
+        this.publish(this.publishedEventName, df);
+        if (this.stateful && this.stateId){
+            this.saveState();
+        }
+    },
     _addSelector: function(settings){
         this.removeAll();
 
         this.logger.log('_addSelector', settings);
+        var ct = this.add({
+            xtype: 'container',
+            layout: 'hbox',
+            padding: 15
+        });
 
-        this.fieldValuePicker = this.add({
+        this.fieldValuePicker = ct.add({
             xtype: 'rallyfieldvaluecombobox',
             model: this._getModelType(),
             field: this._getFieldName(),
@@ -109,11 +95,18 @@ Ext.define("pfv-selector", {
         this.fieldValuePicker.on('ready', this._updateLabel, this, {single: true});
         this.fieldValuePicker.on('change', this._updateFilter, this);
 
+        this.resultsStatus = ct.add({
+            xtype: 'container',
+            margin: 15,
+            flex: 1,
+            tpl: '<tpl>{message}</tpl>'
+        });
+
     },
     _updateLabel: function(cb){
         if (cb && cb.model){
             var field = cb.model.getField(this._getFieldName());
-            console.log('field', field);
+
             if (field) {
                 cb.setFieldLabel(field.displayName);
             }

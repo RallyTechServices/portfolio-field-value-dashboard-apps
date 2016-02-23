@@ -6,7 +6,14 @@
         logger: new Rally.technicalservices.Logger(),
         cls: "portfolio-cfd-app",
 
-        type: this.getSetting('selectorType'),
+        config: {
+            defaultSettings: {
+                //startDate: Rally.util.DateTime.add(new Date(), 'day', -30),
+                //endDate: new Date(),
+                calculationType: 'storycount'
+            }
+        },
+
         chartComponentConfig: {
             xtype: "rallychart",
 
@@ -18,7 +25,7 @@
             storeType: 'Rally.data.lookback.SnapshotStore',
             storeConfig: {
                 find: {
-                    "_TypeHierarchy": -51038,
+                    "_TypeHierarchy": 'HierarchicalRequirement', //-51038,
                     "Children": null
                 },
                 removeUnauthorizedSnapshots: true,
@@ -89,6 +96,8 @@
 
         PI_SETTING: "portfolioItemPicker",
 
+
+
         items: [
             {
                 xtype: 'container',
@@ -118,13 +127,16 @@
             //Ext.create('Rally.apps.charts.IntegrationHeaders',this).applyTo(this.chartComponentConfig.storeConfig);
         },
         addComponents: function(){
-            this.logger.log('addComponents',this.portfolioItemTypes);
 
             if (this.headerContainer){
                 this.headerContainer.destroy();
             }
             if (this.displayContainer){
                 this.displayContainer.destroy();
+            }
+
+            if (!this._validateSettingsChoices()) {
+                return this.owner && this.owner.showSettings();
             }
 
             this.headerContainer = this.add({xtype:'container',itemId:'header-ct', layout: {type: 'hbox'}});
@@ -139,25 +151,30 @@
 
             this.displayContainer.removeAll();
 
-            this.portfolioItem = dashboardSettings;
+            this.dashboardFilter = dashboardSettings;
 
-
-            if (!portfolioItemRecord || !this._savedPortfolioItemValid(portfolioItemRecord.getData())) {
-                this._portfolioItemNotValid();
+            if (!dashboardSettings) {
+                this._noDashboardFilters();
                 return;
             }
+            var filter = dashboardSettings.getFilter(dashboardSettings.filterModelType, []);
 
-            if (portfolioItemRecord) {
-                Rally.data.ModelFactory.getModel({
-                    type: 'UserStory',
-                    success: function (model) {
-                        this._onUserStoryModelRetrieved(model, portfolioItemRecord.getData());
-                    },
-                    scope: this
-                });
-            } else {
-                this._setErrorTextMessage("A server error occurred, please refresh the page.");
-            }
+            Ext.create('Rally.data.wsapi.Store',{
+                model: dashboardSettings.filterModelType,
+                fetch: ['ObjectID','PlannedStartDate','PlannedEndDate','ActualStartDate','ActualEndDate'],
+                filters: filter,
+                limit: 'Infinity'
+            }).load({
+                scope: this,
+                callback: function(records, operation){
+                    this.logger.log('updateDashboardFilter', records, operation, filter);
+                    if (operation.wasSuccessful()){
+                        this._loadUserStories(records);
+                    } else {
+                        this._setErrorTextMessage("Error retrieving Portfolio Items: " + operation.error.errors.join(','));
+                    }
+                }
+            });
         },
         getOptions: function() {
             return [
@@ -232,42 +249,15 @@
             });
         },
 
-        _loadSavedPortfolioItem: function () {
-            if (!this._validateSettingsChoices()) {
-                return this.owner && this.owner.showSettings();
-            }
-
-            var portfolioItemRef = this.getSetting(this.PI_SETTING);
-            var store = Ext.create("Rally.data.wsapi.Store", {
-                model: Ext.identityFn("Portfolio Item"),
-                filters: [
-                    {
-                        property: "ObjectID",
-                        operator: "=",
-                        value: Rally.util.Ref.getOidFromRef(portfolioItemRef)
-                    }
-                ],
-                context: {
-                    workspace: this.getContext().getWorkspaceRef(),
-                    project: null
-                },
-                scope: this
-            });
-
-            store.on('load', this._onPortfolioItemRetrieved, this);
-            store.load();
-        },
-
         _validateSettingsChoices: function () {
-            var piRef = this._getSettingPortfolioItem(),
-                startDate = this._getSettingStartDate(),
+            var startDate = this._getSettingStartDate(),
                 endDate = this._getSettingEndDate(),
                 dataType = this.getSetting("calculationType"),
                 invalid = function (value) {
                     return !value || value === "undefined";
                 };
 
-            if (invalid(piRef) || invalid(startDate) || invalid(endDate) || invalid(dataType)) {
+            if (invalid(startDate) || invalid(endDate) || invalid(dataType)) {
                 return false;
             }
             return true;
@@ -296,24 +286,13 @@
             return "undefined";
         },
 
-        _savedPortfolioItemValid: function (savedPi) {
-            return !!(savedPi && savedPi._type && savedPi.ObjectID && savedPi.Name);
-        },
+        _loadUserStories: function (records) {
 
-        _onPortfolioItemRetrieved: function (store) {
-            var storeData = store.getAt(0),
-                portfolioItemRecord = storeData.data;
-
-            if (!this._savedPortfolioItemValid(portfolioItemRecord)) {
-                this._portfolioItemNotValid();
-                return;
-            }
-
-            if (portfolioItemRecord) {
+            if (records && records.length > 0) {
                 Rally.data.ModelFactory.getModel({
                     type: 'UserStory',
                     success: function (model) {
-                        this._onUserStoryModelRetrieved(model, portfolioItemRecord);
+                        this._onUserStoryModelRetrieved(model, records);
                     },
                     scope: this
                 });
@@ -322,13 +301,14 @@
             }
         },
 
-        _onUserStoryModelRetrieved: function (model, portfolioItem) {
+        _onUserStoryModelRetrieved: function (model, portfolioItems) {
             var scheduleStateValues = model.getField('ScheduleState').getAllowedStringValues();
             this.chartComponentConfig.calculatorConfig.scheduleStates = scheduleStateValues;
 
-            this._setDynamicConfigValues(portfolioItem);
-            this._calculateDateRange(portfolioItem);
-            this._updateQueryConfig(portfolioItem);
+
+            this._setDynamicConfigValues();
+            this._calculateDateRange(portfolioItems);
+            this._updateQueryConfig(portfolioItems);
 
             if (this.down('rallychart')){
                 this.down('rallychart').destroy();
@@ -339,10 +319,10 @@
             Rally.environment.getMessageBus().publish(Rally.Message.piChartAppReady);
         },
 
-        _setDynamicConfigValues: function (portfolioItem) {
+        _setDynamicConfigValues: function () {
             this._updateChartConfigDateFormat();
-            this.chartComponentConfig.chartConfig.title = this._buildChartTitle(portfolioItem);
-            this.chartComponentConfig.chartConfig.subtitle = this._buildChartSubtitle(portfolioItem);
+            this.chartComponentConfig.chartConfig.title = this._buildChartTitle(this.dashboardFilter);
+            this.chartComponentConfig.chartConfig.subtitle = this._buildChartSubtitle(this.dashboardFilter);
 
             this.chartComponentConfig.calculatorConfig.chartAggregationType = this._getAggregationType();
             this.chartComponentConfig.chartConfig.yAxis[0].title.text = this._getYAxisTitle();
@@ -371,17 +351,53 @@
             return Rally.util.DateTime.format(date, dateFormat);
         },
 
-        _calculateDateRange: function (portfolioItem) {
+        _getMinMaxDates: function(portfolioItems){
+            var startFields = ['PlannedStartDate','ActualStartDate'],
+                endFields = ['PlannedEndDate','ActualEndDate'],
+                dates = {
+                PlannedStartDate: null,
+                ActualStartDate: null,
+                PlannedEndDate: null,
+                ActualEndDate: null,
+            };
+
+            Ext.Array.each(portfolioItems, function(p){
+                Ext.Array.each(startFields, function(sf){
+                    var s = p.get(sf);
+                    if (s){
+                        if (dates[sf] === null || s < dates[sf]){
+                            dates[sf] = s;
+                        }
+                    }
+                });
+                Ext.Array.each(endFields, function(ef){
+                    var e = p.get(ef);
+                    if (e){
+                        if (dates[ef] === null || e < dates[ef]){
+                            dates[ef] = e;
+                        }
+                    }
+                });
+            });
+            this.logger.log('_getMinMaxDates', dates);
+            return dates;
+        },
+
+        _calculateDateRange: function (portfolioItems) {
+
+            var portfolioDates = this._getMinMaxDates(portfolioItems);
+
             var calcConfig = this.chartComponentConfig.calculatorConfig;
-            calcConfig.startDate = calcConfig.startDate || this._getChartStartDate(portfolioItem);
-            calcConfig.endDate = calcConfig.endDate || this._getChartEndDate(portfolioItem);
+            calcConfig.startDate = calcConfig.startDate || this._getChartStartDate(portfolioDates);
+            calcConfig.endDate = calcConfig.endDate || this._getChartEndDate(portfolioDates);
             calcConfig.timeZone = calcConfig.timeZone || this._getTimeZone();
 
             this.chartComponentConfig.chartConfig.xAxis.tickInterval = this._configureChartTicks(calcConfig.startDate, calcConfig.endDate);
         },
 
-        _updateQueryConfig: function (portfolioItem) {
-            this.chartComponentConfig.storeConfig.find._ItemHierarchy = portfolioItem.ObjectID;
+        _updateQueryConfig: function (portfolioItems) {
+            var portfolioItemOids = _.map(portfolioItems, function(p){ return p.get('ObjectID'); });
+            this.chartComponentConfig.storeConfig.find._ItemHierarchy = {"$in": portfolioItemOids};
         },
 
         _configureChartTicks: function (startDate, endDate) {
@@ -405,14 +421,14 @@
             return this.getContext().getWorkspace().WorkspaceConfiguration.DateFormat;
         },
 
-        _buildChartTitle: function (portfolioItem) {
+        _buildChartTitle: function (dashboardFilter) {
             var widthPerCharacter = 10,
                 totalCharacters = Math.floor(this.getWidth() / widthPerCharacter),
                 title = "Portfolio Item Chart",
                 align = "center";
 
-            if (portfolioItem) {
-                title = portfolioItem.FormattedID + ": " + portfolioItem.Name;
+            if (dashboardFilter) {
+                title = 'Portfolio Item ' + dashboardFilter.filterFieldDisplayName + " = " + dashboardFilter.filterValue;
             }
 
             if (totalCharacters < title.length) {
@@ -421,50 +437,17 @@
             }
 
             return {
-                text: title,
-                align: align,
-                margin: 30
+                text: null
+                //text: title,
+                //align: align,
+                //margin: 30
             };
         },
 
-        _buildChartSubtitle: function (portfolioItem) {
-            var widthPerCharacter = 6,
-                totalCharacters = Math.floor(this.getWidth() / widthPerCharacter),
-                plannedStartDate = "",
-                plannedEndDate = "";
-
-            var template = Ext.create("Ext.XTemplate",
-                '<tpl if="plannedStartDate">' +
-                '<span>Planned Start: {plannedStartDate}</span>' +
-                '    <tpl if="plannedEndDate">' +
-                '        <tpl if="tooBig">' +
-                '            <br />' +
-                '        <tpl else>' +
-                '            &nbsp;&nbsp;&nbsp;' +
-                '        </tpl>' +
-                '    </tpl>' +
-                '</tpl>' +
-                '<tpl if="plannedEndDate">' +
-                '    <span>Planned End: {plannedEndDate}</span>' +
-                '</tpl>'
-            );
-
-            if (portfolioItem && portfolioItem.PlannedStartDate) {
-                plannedStartDate = this._formatDate(portfolioItem.PlannedStartDate);
-            }
-
-            if (portfolioItem && portfolioItem.PlannedEndDate) {
-                plannedEndDate = this._formatDate(portfolioItem.PlannedEndDate);
-            }
-
-            var formattedTitle = template.apply({
-                plannedStartDate: plannedStartDate,
-                plannedEndDate: plannedEndDate,
-                tooBig: totalCharacters < plannedStartDate.length + plannedEndDate.length + 60
-            });
+        _buildChartSubtitle: function () {
 
             return {
-                text: formattedTitle,
+                text: null,
                 useHTML: true,
                 align: "center"
             };
@@ -480,7 +463,7 @@
                 "Count";
         },
 
-        _getChartStartDate: function (portfolioItem) {
+        _getChartStartDate: function (portfolioDates) {
             var startDateSetting = this._getSettingStartDate().split(","),
                 settingValue = startDateSetting[0],
                 startDate;
@@ -488,14 +471,14 @@
             if(startDateSetting[0] === "selecteddate") {
                 startDate = this.dateStringToObject(startDateSetting[1]);
             } else {
-                startDate = this._dateFromSettingValue(portfolioItem, settingValue);
+                startDate = this._dateFromSettingValue(portfolioDates, settingValue);
             }
 
             this.logger.log('_getChartStartDate', startDate);
             return this.dateToString(startDate);
         },
 
-        _getChartEndDate: function (portfolioItem) {
+        _getChartEndDate: function (portfolioDates) {
             var endDateSetting = this._getSettingEndDate().split(","),
                 settingValue = endDateSetting[0],
                 endDate;
@@ -503,14 +486,14 @@
             if (endDateSetting[0] === "selecteddate") {
                 endDate = this.dateStringToObject(endDateSetting[1]);
             } else {
-                endDate = this._dateFromSettingValue(portfolioItem, settingValue);
+                endDate = this._dateFromSettingValue(portfolioDates, settingValue);
             }
 
             this.logger.log('_getChartEndDate', endDate);
             return this.dateToString(endDate);
         },
 
-        _dateFromSettingValue: function (portfolioItem, settingValue) {
+        _dateFromSettingValue: function (dates, settingValue) {
             var settingsMap = {
                 "plannedstartdate": "PlannedStartDate",
                 "plannedenddate": "PlannedEndDate",
@@ -523,18 +506,17 @@
             }
 
             if (settingsMap.hasOwnProperty(settingValue)) {
-                return portfolioItem[settingsMap[settingValue]];
+                return dates[settingsMap[settingValue]];
             }
 
             return new Date(settingValue);
         },
-
         _getTimeZone: function () {
             return this.getContext().getUser().UserProfile.TimeZone || this.getContext().getWorkspace().WorkspaceConfiguration.TimeZone;
         },
 
-        _portfolioItemNotValid: function () {
-            this._setErrorTextMessage('Cannot find the chosen portfolio item.  Please choose another.');
+        _noDashboardFilters: function () {
+            this._setErrorTextMessage('No Dashboard Filters specified.');
         },
 
         _setErrorTextMessage: function (message) {
