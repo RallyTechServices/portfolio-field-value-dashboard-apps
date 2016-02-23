@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Portfolio Kanban</title>
+    <title>Portfolio Cumulative Flow</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Feb 23 2016 07:56:50 GMT-0700 (MST) -->
+    <!--  Build Date: Tue Feb 23 2016 08:49:00 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Feb 23 2016 07:56:50 GMT-0700 (MST)";
+        var APP_BUILD_DATE = "Tue Feb 23 2016 08:49:00 GMT-0700 (MST)";
         var CHECKSUM = [%= checksum %];
     </script>
     
@@ -16,8 +16,8 @@
         Rally.onReady(function() {
             
             
-               Rally.launchApp('pfv-kanban', {
-                   name: 'Portfolio Kanban'
+               Rally.launchApp('pfv-cfd', {
+                   name: 'Portfolio Cumulative Flow'
                });
         });
     </script>
@@ -41,17 +41,23 @@
     margin-right: 5px;
     cursor: pointer;
 }
-.message {
-    font-family: ProximaNova, Helvetica, Arial;
-    font-size: 14px;
-    color: #999999;
+
+.settingsLabel {
+    font-family: NotoSansBold, Helvetica, Arial;
+    font-weight: normal;
+    min-height: 20px;
+    text-transform: uppercase;
 }
 
-.portfolio-item {
-    font-family: ProximaNova, Helvetica, Arial;
-    font-size: 14px;
+.settingsSubLabel {
+    font-family: NotoSans, Helvetica, Arial;
+    font-weight: normal;
+    font-size: 10px;
+    font-style: italic;
+    float: right;
+    align: right;
+    text-align: right;
     color: #666666;
-
 }
     </style>
 
