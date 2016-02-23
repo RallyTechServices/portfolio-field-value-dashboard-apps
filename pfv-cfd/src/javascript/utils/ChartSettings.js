@@ -5,9 +5,7 @@
         singleton: true,
 
         getSettings: function(context, config){
-            var filters = [{property: 'TypePath', operator: 'contains', value: 'PortfolioItem/'}],
-                current_calculation_type = (config && config.calculationType) || 'storycount',
-                useSelector = config.showScopeSelector === true || config.showScopeSelector === "true",
+            var current_calculation_type = (config && config.calculationType) || 'storycount',
                 labelWidth= 150,
                 startDate = config.startdate || ["plannedstartdate",""],
                 endDate = config.enddate || ["today",""];
@@ -21,44 +19,6 @@
             console.log('startdate,enddate',startDate, endDate);
             return [
                 {
-                    name: 'showScopeSelector',
-                    xtype: 'rallycheckboxfield',
-                    fieldLabel: 'Show Scope Selector',
-                    bubbleEvents: ['change'],
-                    labelWidth: labelWidth,
-                    labelAlign: 'right',
-                    labelCls: 'settingsLabel'
-                },
-                {
-                    name: 'selectorType',
-                    xtype: 'rallycombobox',
-                    allowBlank: false,
-                    autoSelect: false,
-                    shouldRespondToScopeChange: true,
-                    fieldLabel: '      Selector Type',
-                    labelCls: 'settingsSubLabel',
-                    labelAlign: 'right',
-                    context: context,
-                    labelWidth: labelWidth,
-                    storeConfig: {
-                        model: Ext.identityFn('TypeDefinition'),
-                        sorters: [{ property: 'DisplayName' }],
-                        fetch: ['DisplayName', 'ElementName', 'TypePath', 'Parent', 'UserListable'],
-                        filters: filters,
-                        autoLoad: false,
-                        remoteSort: false,
-                        remoteFilter: true
-                    },
-                    displayField: 'DisplayName',
-                    valueField: 'TypePath',
-                    readyEvent: 'ready',
-                    disabled: !useSelector,
-                    handlesEvents: {
-                        change: function(chk){
-                            this.setDisabled(chk.getValue()!==true);
-                        }
-                    }
-                },{
                     xtype: "fieldcontainer",
                     layout: {type: 'hbox'},
                     items: [{
@@ -204,15 +164,8 @@
                         boxLabel: "Story Plan Estimate",
                         name: 'calculationType',
                         inputValue: "storypoints",
-                        checked: "storypoints" === current_calculation_type
-                        //},
-                        //{
-                        //    xtype: "chartportfoliodatepicker",
-                        //    cls: "paddedSettingCmp"
-                        //},
-                        //{
-                        //    xtype: "chartportfoliodatatypepicker",
-                        //    cls: "paddedSettingCmp"
+                        checked: "storypoints" === current_calculation_type,
+                        cls: "paddedSettingCmp"
                     }]
                 }];
         }

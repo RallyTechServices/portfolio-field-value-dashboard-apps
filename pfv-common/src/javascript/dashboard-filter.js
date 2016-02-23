@@ -6,12 +6,15 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
     filterValue: undefined,
 
     getFilter: function(resultsRecordType, portfolioItemTypes){
-        //First verify that the selected portfolio item type is an ancestor to the selected grid type.
+
+        portfolioItemTypes = portfolioItemTypes || [];
+        resultsRecordType = resultsRecordType || this.filterModelType;
+
         var modelType = this.filterModelType.toLowerCase(),
-            pi_types = _.map(portfolioItemTypes, function(pi){return pi.typePath.toLowerCase()}),
+            pi_types = portfolioItemTypes.length > 0 ? _.map(portfolioItemTypes, function(pi){return pi.typePath.toLowerCase()}) : [],
             idx = _.indexOf(pi_types, modelType),
             type_idx = _.indexOf(pi_types, resultsRecordType.toLowerCase());
-
+        console.log('idx', idx,type_idx);
         if (type_idx < idx) {
             var properties = [];
             for (var i = type_idx; i < idx; i++) {
