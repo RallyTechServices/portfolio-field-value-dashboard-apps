@@ -1,5 +1,16 @@
 #Portfolio Field Value Selector
 
+This app is the portfolio field value selector that broadcasts a filter for the parent portfolio item data set to use 
+for any of the compatible Portfolio Field Value Apps (pfv-cfd, pfv-custom-grid, pfv-kanban).  
+
+The configurations are:
+ * a portfolio item type to query the selected field value
+ * a portfolio item field of a constrained type (dropdown, reference field) that is not one-to-many
+ 
+When a field value is selected, the portfolio item dataset will be the set of portfolio items (of the configured type) that have the selected field value.  
+The subscribed apps will present data that is filtered by the selected dataset.  See the specific app readmes for details.  
+
+
 ## Development Notes
 
 ### First Load
