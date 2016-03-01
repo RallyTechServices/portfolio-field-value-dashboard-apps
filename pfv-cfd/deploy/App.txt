@@ -3,11 +3,11 @@
 <head>
     <title>Portfolio Cumulative Flow</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Feb 23 2016 08:48:59 GMT-0700 (MST) -->
+    <!--  Build Date: Mon Feb 29 2016 20:08:29 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Feb 23 2016 08:48:59 GMT-0700 (MST)";
-        var CHECKSUM = 35667892045;
+        var APP_BUILD_DATE = "Mon Feb 29 2016 20:08:29 GMT-0700 (MST)";
+        var CHECKSUM = 36223252801;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1147,6 +1147,7 @@ Ext.define('Rally.technicalservices.Logger',{
                     }
                 });
             });
+
             this.logger.log('_getMinMaxDates', dates);
             return dates;
         },
@@ -1232,6 +1233,7 @@ Ext.define('Rally.technicalservices.Logger',{
         },
 
         _getChartStartDate: function (portfolioDates) {
+            this.logger.log('_getChartStartDate', portfolioDates);
             var startDateSetting = this._getSettingStartDate().split(","),
                 settingValue = startDateSetting[0],
                 startDate;
@@ -1241,8 +1243,8 @@ Ext.define('Rally.technicalservices.Logger',{
             } else {
                 startDate = this._dateFromSettingValue(portfolioDates, settingValue);
             }
-
             this.logger.log('_getChartStartDate', startDate);
+
             return this.dateToString(startDate);
         },
 
@@ -1255,6 +1257,10 @@ Ext.define('Rally.technicalservices.Logger',{
                 endDate = this.dateStringToObject(endDateSetting[1]);
             } else {
                 endDate = this._dateFromSettingValue(portfolioDates, settingValue);
+            }
+
+            if (!endDate){
+                endDate = new Date();
             }
 
             this.logger.log('_getChartEndDate', endDate);
@@ -1272,8 +1278,10 @@ Ext.define('Rally.technicalservices.Logger',{
             if (settingValue === "today") {
                 return new Date();
             }
+            this.logger.log('_dateFromSettingValue', settingValue);
 
             if (settingsMap.hasOwnProperty(settingValue)) {
+                this.logger.log('_dateFromSettingValue', dates[settingsMap[settingValue]]);
                 return dates[settingsMap[settingValue]];
             }
 

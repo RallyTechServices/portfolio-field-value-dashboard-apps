@@ -379,6 +379,7 @@
                     }
                 });
             });
+
             this.logger.log('_getMinMaxDates', dates);
             return dates;
         },
@@ -464,6 +465,7 @@
         },
 
         _getChartStartDate: function (portfolioDates) {
+            this.logger.log('_getChartStartDate', portfolioDates);
             var startDateSetting = this._getSettingStartDate().split(","),
                 settingValue = startDateSetting[0],
                 startDate;
@@ -473,8 +475,8 @@
             } else {
                 startDate = this._dateFromSettingValue(portfolioDates, settingValue);
             }
-
             this.logger.log('_getChartStartDate', startDate);
+
             return this.dateToString(startDate);
         },
 
@@ -487,6 +489,10 @@
                 endDate = this.dateStringToObject(endDateSetting[1]);
             } else {
                 endDate = this._dateFromSettingValue(portfolioDates, settingValue);
+            }
+
+            if (!endDate){
+                endDate = new Date();
             }
 
             this.logger.log('_getChartEndDate', endDate);
@@ -504,8 +510,10 @@
             if (settingValue === "today") {
                 return new Date();
             }
+            this.logger.log('_dateFromSettingValue', settingValue);
 
             if (settingsMap.hasOwnProperty(settingValue)) {
+                this.logger.log('_dateFromSettingValue', dates[settingsMap[settingValue]]);
                 return dates[settingsMap[settingValue]];
             }
 
