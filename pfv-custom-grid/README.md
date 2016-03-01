@@ -1,5 +1,16 @@
 #Custom Grid
 
+This app is a custom list that responds to a selected portfolio item field value.  When a field value is selected, the portfolio item dataset 
+ is the set of portfolio items (of the configured type) that have the selected field value.  
+ 
+The custom grid will show all artifacts that are descendants of that portfolio item data set.  
+
+Configurations include:
+*  Top level object type - this must be an object type of the same or lower hierarchy than the configured portfolio item type on the portfolio item field selector.  
+    If the object type hierarchy is above the selected type, then the user will see a warning message.  
+*  Query - Ability to enter a query string for the app (e.g. PlanEstimate > 0). If the query string is not valid for the selected portfolio item type, then the user will see an error notification.  
+
+
 ## Development Notes
 
 ### First Load

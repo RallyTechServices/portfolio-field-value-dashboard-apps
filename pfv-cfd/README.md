@@ -1,4 +1,22 @@
-#Portfolio Cumulative Flow
+#Portfolio Item Field Value Cumulative Flow
+
+![ScreenShot](/images/cumulative-flow.png)
+
+This app is a portfolio item cumulative flow diagram that responds to a selected field value for a configured portfolio item type.  The data set
+that makes up the cumulative flow is based on the portfolio items of the configured type that match the selected criteria for the configured field.  
+
+This app subscribes to a portfolio field value selector broadcast from any other app on the page.  
+
+Configurations include:
+*  Start Date - Determines which date to use for the start date.  Options are:  Planned Start Date, Actual Start Date or custom selected date.  
+*  End Date - Determines which date to use for the end date.  Options are: Today, Planned End Date, Actual End Date or a custom selected date.
+*  Data Type - determines whether or not to show the Story Plan Estimate or Story count on the Y-Axis
+
+Becuase this app could be returning data for multiple portfolio items the earliest planned start or actual start date is used and the latest planned end or actual end
+date is used for the timebox.  
+
+Note that if items are outside the scope of the selected project or the user's permissions, then the stories will not be included in the cumulative flow.  
+
 
 ## Development Notes
 

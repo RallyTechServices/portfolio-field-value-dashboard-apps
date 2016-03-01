@@ -1,5 +1,16 @@
 #Portfolio Kanban
 
+This app is a portfolio item kanban board that responds to a selected portfolio item field value.  When a field value is selected, the portfolio item dataset 
+is the set of portfolio items (of the configured type) that have the selected field value.  
+
+The portfolio item kanban will show all direct children of the portfolio item dataset described above.  
+
+Configurations include:
+*  Swimlanes - Setting for dividing cards into Rows by another column
+*  Query to filter cards on the board
+
+Note that if items are outside the scope of the selected project or the user's permissions, then the portfolio items will not be included in the board.  
+
 ## Development Notes
 
 ### First Load
