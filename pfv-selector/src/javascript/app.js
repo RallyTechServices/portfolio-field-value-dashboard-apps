@@ -65,7 +65,7 @@ Ext.define("pfv-selector", {
         });
 
         this.fireEvent('change', df);
-        this.publish(this.publishedEventName, df);
+//        this.publish(this.publishedEventName, df);
         if (this.stateful && this.stateId){
             this.saveState();
         }
@@ -92,9 +92,23 @@ Ext.define("pfv-selector", {
             width: 400,
             flex: 1
         });
+        
         this.fieldValuePicker.on('ready', this._updateLabel, this, {single: true});
         this.fieldValuePicker.on('change', this._updateFilter, this);
 
+        this.goButton = ct.add({
+            xtype: 'rallybutton',
+            text: 'Go',
+            cls: 'rly-small primary',
+            margin: '15 10 0 5',
+            listeners: {
+                scope: this,
+                click: function() {
+                    this.publish(this.publishedEventName, this._getDashboardFilter() || null);
+                }
+            }
+        });
+        
         this.resultsStatus = ct.add({
             xtype: 'container',
             margin: 15,

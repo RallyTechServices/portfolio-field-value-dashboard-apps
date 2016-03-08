@@ -3,11 +3,11 @@
 <head>
     <title>Portfolio Field Value Selector</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Feb 23 2016 06:50:37 GMT-0700 (MST) -->
+    <!--  Build Date: Mon Mar 07 2016 16:48:23 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Feb 23 2016 06:50:37 GMT-0700 (MST)";
-        var CHECKSUM = 9258082427;
+        var APP_BUILD_DATE = "Mon Mar 07 2016 16:48:23 GMT-0800 (PST)";
+        var CHECKSUM = 9529598722;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -513,7 +513,7 @@ Ext.define("pfv-selector", {
         });
 
         this.fireEvent('change', df);
-        this.publish(this.publishedEventName, df);
+//        this.publish(this.publishedEventName, df);
         if (this.stateful && this.stateId){
             this.saveState();
         }
@@ -540,9 +540,23 @@ Ext.define("pfv-selector", {
             width: 400,
             flex: 1
         });
+        
         this.fieldValuePicker.on('ready', this._updateLabel, this, {single: true});
         this.fieldValuePicker.on('change', this._updateFilter, this);
 
+        this.goButton = ct.add({
+            xtype: 'rallybutton',
+            text: 'Go',
+            cls: 'rly-small primary',
+            margin: '15 10 0 5',
+            listeners: {
+                scope: this,
+                click: function() {
+                    this.publish(this.publishedEventName, this._getDashboardFilter() || null);
+                }
+            }
+        });
+        
         this.resultsStatus = ct.add({
             xtype: 'container',
             margin: 15,
