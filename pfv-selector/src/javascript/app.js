@@ -10,11 +10,11 @@ Ext.define("pfv-selector", {
         }
     },
 
-    publishedEventName: 'dashboardFilterUpdated',
+    publishedEventName: Rally.technicalservices.common.DashboardFilter.publishedEventName,
 
     launch: function() {
         this._addSelector(this.getSettings());
-        this.subscribe(this, 'requestDashboardFilter', this._requestDashboardFilter, this);
+        this.subscribe(this, Rally.technicalservices.common.DashboardFilter.requestEventName, this._requestDashboardFilter, this);
     },
     _getModelType: function(){
         return this.getSetting('selectorType');
@@ -99,11 +99,14 @@ Ext.define("pfv-selector", {
         this.goButton = ct.add({
             xtype: 'rallybutton',
             text: 'Go',
+            itemId: 'pfv-go-button',
             cls: 'rly-small primary',
             margin: '15 10 0 5',
             listeners: {
                 scope: this,
                 click: function() {
+                    this.logger.log('publishing ', this.publishedEventName, this._getDashboardFilter());
+                    
                     this.publish(this.publishedEventName, this._getDashboardFilter() || null);
                 }
             }
@@ -139,7 +142,12 @@ Ext.define("pfv-selector", {
         return this.dashboardFilter || null;
     },
     _requestDashboardFilter : function() {
-        this.publish(this.publishedEventName, this._getDashboardFilter() || null);
+        this.logger.log("Filter requested");
+        if ( this.down('#pfv-go-button') && ! this.down('#pfv-go-button').isDisabled() ) {
+            this.publish(this.publishedEventName, this._getDashboardFilter() || null); 
+        } else {
+            this.logger.log("Filter requested, but go button is not available");
+        }
     },
     _launchInfo: function() {
         if ( this.about_dialog ) { this.about_dialog.destroy(); }
