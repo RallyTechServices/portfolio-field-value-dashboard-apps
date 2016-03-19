@@ -204,7 +204,6 @@ Ext.define("pfv-custom-grid", {
         return subFilters;
     },
     addGridBoard: function (store) {
-        this.logger.log('addGridBoard', store, this.getPermanentFilters());
         if (this.getGridboard()) {
             this.getGridboard().destroy();
         }
@@ -227,8 +226,6 @@ Ext.define("pfv-custom-grid", {
                 headerPosition: 'left',
                 modelNames: modelNames,
                 gridAlwaysSelectedValues: alwaysSelectedFields,
-//                stateful: true,
-//                stateId: this.getContext().getScopedStateId('pfv-grid-columns'),
                 margin: '3 0 0 10'
             },{
                 ptype: 'rallygridboardcustomfiltercontrol',
@@ -288,19 +285,24 @@ Ext.define("pfv-custom-grid", {
     },
     
     _getAlwaysSelectedFields: function() {
-        var setting = this.getSetting('columnNames') ;
-        
-        if ( Ext.isEmpty(setting) ) {
+        var columns = this.getSetting('columnNames');
+
+        if ( Ext.isEmpty(columns) ) {
             return [];
         }
         
-        if ( Ext.isString(setting) ) {
-            return setting.split(',');
+        if ( Ext.isString(columns) ) {
+            columns = columns.split(',');
         }
-        return setting;
+        
+        columns = Ext.Array.filter( columns, function(column){
+            return ( column != 'FormattedID' );
+        });
+        
+        return Ext.Array.unique( columns );
     },
 
     _getColumns: function() {
         return this._getAlwaysSelectedFields();
-    }
+    }        
 });
