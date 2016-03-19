@@ -3,11 +3,11 @@
 <head>
     <title>Custom Grid</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sat Mar 19 2016 16:17:03 GMT-0700 (PDT) -->
+    <!--  Build Date: Sat Mar 19 2016 16:39:33 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sat Mar 19 2016 16:17:03 GMT-0700 (PDT)";
-        var CHECKSUM = 19576037257;
+        var APP_BUILD_DATE = "Sat Mar 19 2016 16:39:33 GMT-0700 (PDT)";
+        var CHECKSUM = 19587883733;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -468,7 +468,7 @@ Ext.override(Rally.ui.grid.TreeGrid,{
                 // for columns passed in, use state-saved version if available
                 
                 var unused_cfgs = Ext.Array.filter(this.columnCfgs, function(column){
-                    var ignore_column_names = ['FormattedID','Rank','DragAndDropRank'];
+                    var ignore_column_names = ['FormattedID','Rank','DragAndDropRank','Name'];
                     
                     if ( Ext.isObject(column) ) {
                         if ( Ext.Array.contains(ignore_column_names, column.dataIndex)) {

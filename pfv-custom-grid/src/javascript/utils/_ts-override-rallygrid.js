@@ -20,7 +20,7 @@ Ext.override(Rally.ui.grid.TreeGrid,{
                 // for columns passed in, use state-saved version if available
                 
                 var unused_cfgs = Ext.Array.filter(this.columnCfgs, function(column){
-                    var ignore_column_names = ['FormattedID','Rank','DragAndDropRank'];
+                    var ignore_column_names = ['FormattedID','Rank','DragAndDropRank','Name'];
                     
                     if ( Ext.isObject(column) ) {
                         if ( Ext.Array.contains(ignore_column_names, column.dataIndex)) {
