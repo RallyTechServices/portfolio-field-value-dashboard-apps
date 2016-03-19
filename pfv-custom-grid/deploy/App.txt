@@ -3,11 +3,11 @@
 <head>
     <title>Custom Grid</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Mar 07 2016 18:19:49 GMT-0800 (PST) -->
+    <!--  Build Date: Fri Mar 18 2016 19:32:47 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Mar 07 2016 18:19:49 GMT-0800 (PST)";
-        var CHECKSUM = 16246247074;
+        var APP_BUILD_DATE = "Fri Mar 18 2016 19:32:47 GMT-0700 (PDT)";
+        var CHECKSUM = 17090336443;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -510,6 +510,17 @@ Ext.define('Rally.technicalservices.Logger',{
                         }
                     }
                 },
+                {
+                    xtype: 'rallyfieldpicker',
+                    name: 'columnNames',
+                    autoExpand: true,
+                    modelTypes: ['HierarchicalRequirement'],
+                    handlesEvents: {
+                        typeselected: function(cb){
+                            this.refreshWithNewModelTypes([cb]);
+                        }
+                    }
+                },
                 { type: 'query' },
                 {
                     name: 'showControls',
@@ -648,7 +659,7 @@ Ext.define("pfv-custom-grid", {
                     childPageSizeEnabled: true,
                     context: this.getContext().getDataContext(),
                     enableHierarchy: true,
-                    fetch: this.columnNames,
+                    fetch: this.columns,
                     models: _.clone(this.models),
                     pageSize: 25,
                     remoteSort: true,
@@ -734,7 +745,8 @@ Ext.define("pfv-custom-grid", {
         }
 
         var modelNames =  _.clone(this.modelNames),
-            context = this.getContext();
+            context = this.getContext(),
+            alwaysSelectedFields = this._getAlwaysSelectedFields();
 
         var gridboard = Ext.create('Rally.ui.gridboard.GridBoard', {
             itemId: 'gridboard',
@@ -747,6 +759,14 @@ Ext.define("pfv-custom-grid", {
                 ptype: 'rallygridboardaddnew',
                 margin: '0 0 0 10'
              },{
+                ptype: 'rallygridboardfieldpicker',
+                headerPosition: 'left',
+                modelNames: modelNames,
+                gridAlwaysSelectedValues: alwaysSelectedFields,
+                stateful: true,
+                stateId: this.getContext().getScopedStateId('pfv-grid-columns'),
+                margin: '3 0 0 10'
+            },{
                 ptype: 'rallygridboardcustomfiltercontrol',
                 filterControlConfig: {
                     modelNames: modelNames,
@@ -758,12 +778,6 @@ Ext.define("pfv-custom-grid", {
                     stateful: true,
                     stateId: this.getContext().getScopedStateId('pfv-owner-filter')
                 }
-            },{
-                ptype: 'rallygridboardfieldpicker',
-                headerPosition: 'left',
-                modelNames: modelNames,
-                stateful: true,
-                stateId: this.getContext().getScopedStateId('pfv-grid-columns')
             },{
                 ptype: 'rallygridboardactionsmenu',
                 menuItems: [
@@ -805,6 +819,19 @@ Ext.define("pfv-custom-grid", {
 
     _shouldEnableRanking: function(){
         return this.getSetting('type').toLowerCase() !== 'task';
+    },
+    
+    _getAlwaysSelectedFields: function() {
+        var setting = this.getSetting('columnNames') ;
+        
+        if ( Ext.isEmpty(setting) ) {
+            return [];
+        }
+        
+        if ( Ext.isString(setting) ) {
+            return setting.split(',');
+        }
+        return setting;
     }
 });
 

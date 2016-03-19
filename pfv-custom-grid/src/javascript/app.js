@@ -124,7 +124,7 @@ Ext.define("pfv-custom-grid", {
                     childPageSizeEnabled: true,
                     context: this.getContext().getDataContext(),
                     enableHierarchy: true,
-                    fetch: this.columnNames,
+                    fetch: this.columns,
                     models: _.clone(this.models),
                     pageSize: 25,
                     remoteSort: true,
@@ -210,7 +210,8 @@ Ext.define("pfv-custom-grid", {
         }
 
         var modelNames =  _.clone(this.modelNames),
-            context = this.getContext();
+            context = this.getContext(),
+            alwaysSelectedFields = this._getAlwaysSelectedFields();
 
         var gridboard = Ext.create('Rally.ui.gridboard.GridBoard', {
             itemId: 'gridboard',
@@ -223,6 +224,14 @@ Ext.define("pfv-custom-grid", {
                 ptype: 'rallygridboardaddnew',
                 margin: '0 0 0 10'
              },{
+                ptype: 'rallygridboardfieldpicker',
+                headerPosition: 'left',
+                modelNames: modelNames,
+                gridAlwaysSelectedValues: alwaysSelectedFields,
+                stateful: true,
+                stateId: this.getContext().getScopedStateId('pfv-grid-columns'),
+                margin: '3 0 0 10'
+            },{
                 ptype: 'rallygridboardcustomfiltercontrol',
                 filterControlConfig: {
                     modelNames: modelNames,
@@ -234,12 +243,6 @@ Ext.define("pfv-custom-grid", {
                     stateful: true,
                     stateId: this.getContext().getScopedStateId('pfv-owner-filter')
                 }
-            },{
-                ptype: 'rallygridboardfieldpicker',
-                headerPosition: 'left',
-                modelNames: modelNames,
-                stateful: true,
-                stateId: this.getContext().getScopedStateId('pfv-grid-columns')
             },{
                 ptype: 'rallygridboardactionsmenu',
                 menuItems: [
@@ -281,5 +284,18 @@ Ext.define("pfv-custom-grid", {
 
     _shouldEnableRanking: function(){
         return this.getSetting('type').toLowerCase() !== 'task';
+    },
+    
+    _getAlwaysSelectedFields: function() {
+        var setting = this.getSetting('columnNames') ;
+        
+        if ( Ext.isEmpty(setting) ) {
+            return [];
+        }
+        
+        if ( Ext.isString(setting) ) {
+            return setting.split(',');
+        }
+        return setting;
     }
 });

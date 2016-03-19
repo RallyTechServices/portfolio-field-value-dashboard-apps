@@ -62,6 +62,17 @@
                         }
                     }
                 },
+                {
+                    xtype: 'rallyfieldpicker',
+                    name: 'columnNames',
+                    autoExpand: true,
+                    modelTypes: ['HierarchicalRequirement'],
+                    handlesEvents: {
+                        typeselected: function(cb){
+                            this.refreshWithNewModelTypes([cb]);
+                        }
+                    }
+                },
                 { type: 'query' },
                 {
                     name: 'showControls',
