@@ -215,7 +215,6 @@ Ext.define("pfv-custom-grid", {
 
         var gridboard = Ext.create('Rally.ui.gridboard.GridBoard', {
             itemId: 'gridboard',
-            // stateId: this.getContext().getScopedStateId('portfolio-grid'),
             toggleState: 'grid',
             modelNames: modelNames,
             context: this.getContext(),
@@ -228,8 +227,8 @@ Ext.define("pfv-custom-grid", {
                 headerPosition: 'left',
                 modelNames: modelNames,
                 gridAlwaysSelectedValues: alwaysSelectedFields,
-                stateful: true,
-                stateId: this.getContext().getScopedStateId('pfv-grid-columns'),
+//                stateful: true,
+//                stateId: this.getContext().getScopedStateId('pfv-grid-columns'),
                 margin: '3 0 0 10'
             },{
                 ptype: 'rallygridboardcustomfiltercontrol',
@@ -265,9 +264,11 @@ Ext.define("pfv-custom-grid", {
                 filters: this.getPermanentFilters()
             },
             gridConfig: {
-                // allColumnsStateful: true,
+                stateful: true,
+                stateId: this.getContext().getScopedStateId('pfv-grid-grid'),
+                state: ['columnschanged','viewready','reconfigure'],
                 store: store,
-                columnCfgs: ['Name'],
+                columnCfgs: this._getColumns(),
                 height: this.getHeight()
             }
         });
@@ -297,5 +298,9 @@ Ext.define("pfv-custom-grid", {
             return setting.split(',');
         }
         return setting;
+    },
+
+    _getColumns: function() {
+        return this._getAlwaysSelectedFields();
     }
 });

@@ -3,11 +3,11 @@
 <head>
     <title>Custom Grid</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Mar 18 2016 19:32:47 GMT-0700 (PDT) -->
+    <!--  Build Date: Fri Mar 18 2016 19:46:06 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Mar 18 2016 19:32:47 GMT-0700 (PDT)";
-        var CHECKSUM = 17090336443;
+        var APP_BUILD_DATE = "Fri Mar 18 2016 19:46:06 GMT-0700 (PDT)";
+        var CHECKSUM = 17293577013;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -750,7 +750,6 @@ Ext.define("pfv-custom-grid", {
 
         var gridboard = Ext.create('Rally.ui.gridboard.GridBoard', {
             itemId: 'gridboard',
-            // stateId: this.getContext().getScopedStateId('portfolio-grid'),
             toggleState: 'grid',
             modelNames: modelNames,
             context: this.getContext(),
@@ -763,8 +762,8 @@ Ext.define("pfv-custom-grid", {
                 headerPosition: 'left',
                 modelNames: modelNames,
                 gridAlwaysSelectedValues: alwaysSelectedFields,
-                stateful: true,
-                stateId: this.getContext().getScopedStateId('pfv-grid-columns'),
+//                stateful: true,
+//                stateId: this.getContext().getScopedStateId('pfv-grid-columns'),
                 margin: '3 0 0 10'
             },{
                 ptype: 'rallygridboardcustomfiltercontrol',
@@ -800,9 +799,11 @@ Ext.define("pfv-custom-grid", {
                 filters: this.getPermanentFilters()
             },
             gridConfig: {
-                // allColumnsStateful: true,
+                stateful: true,
+                stateId: this.getContext().getScopedStateId('pfv-grid-grid'),
+                state: ['columnschanged','viewready','reconfigure'],
                 store: store,
-                columnCfgs: ['Name'],
+                columnCfgs: this._getColumns(),
                 height: this.getHeight()
             }
         });
@@ -832,6 +833,10 @@ Ext.define("pfv-custom-grid", {
             return setting.split(',');
         }
         return setting;
+    },
+
+    _getColumns: function() {
+        return this._getAlwaysSelectedFields();
     }
 });
 
