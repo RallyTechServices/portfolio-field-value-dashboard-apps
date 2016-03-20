@@ -62,13 +62,25 @@
                         }
                     }
                 },
+                {
+                    xtype: 'rallyfieldpicker',
+                    name: 'columnNames',
+                    autoExpand: true,
+                    modelTypes: ['HierarchicalRequirement'],
+                    alwaysSelectedValues: ['FormattedID','DragAndDropRank','Rank'],
+                    handlesEvents: {
+                        typeselected: function(cb){
+                            this.refreshWithNewModelTypes([cb]);
+                        }
+                    }
+                },
                 { type: 'query' },
                 {
                     name: 'showControls',
                     xtype: 'rallycheckboxfield',
                     fieldLabel: 'Show Control Bar'
                 },
-                getHiddenFieldConfig('columnNames'),
+                //getHiddenFieldConfig('columnNames'),
                 getHiddenFieldConfig('order')
             ];
         }
