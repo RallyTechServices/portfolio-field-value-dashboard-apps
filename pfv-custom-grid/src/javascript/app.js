@@ -262,7 +262,7 @@ Ext.define("pfv-custom-grid", {
             },
             gridConfig: {
                 stateful: true,
-                stateId: this.getContext().getScopedStateId('pfv-grid-grid'),
+                stateId: this.getContext().getScopedStateId('pfv-grid-grid-2'),
                 state: ['columnschanged','viewready','reconfigure'],
                 store: store,
                 columnCfgs: this._getColumns(),

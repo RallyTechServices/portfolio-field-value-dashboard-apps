@@ -3,11 +3,11 @@
 <head>
     <title>Custom Grid</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sat Mar 19 2016 16:39:33 GMT-0700 (PDT) -->
+    <!--  Build Date: Sun Mar 27 2016 16:27:50 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sat Mar 19 2016 16:39:33 GMT-0700 (PDT)";
-        var CHECKSUM = 19587883733;
+        var APP_BUILD_DATE = "Sun Mar 27 2016 16:27:50 GMT-0700 (PDT)";
+        var CHECKSUM = 19589894070;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -853,7 +853,7 @@ Ext.define("pfv-custom-grid", {
             },
             gridConfig: {
                 stateful: true,
-                stateId: this.getContext().getScopedStateId('pfv-grid-grid'),
+                stateId: this.getContext().getScopedStateId('pfv-grid-grid-2'),
                 state: ['columnschanged','viewready','reconfigure'],
                 store: store,
                 columnCfgs: this._getColumns(),
