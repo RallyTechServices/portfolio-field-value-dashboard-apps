@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TS Timeline by Portfolio Field Value</title>
+    <!--  (c) 2015,2016 CA Technologies.  All Rights Reserved. -->
+    <!--  Build Date: Mon Apr 04 2016 22:59:04 GMT-0700 (PDT) -->
+    
+    <script type="text/javascript">
+        var APP_BUILD_DATE = "Mon Apr 04 2016 22:59:04 GMT-0700 (PDT)";
+        var CHECKSUM = 19821858881;
+    </script>
+    
+    <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function() {
+             
+Ext.define('Rally.technicalservices.common.DashboardFilter',{
+
+
+    filterModelType: undefined,
+    filterField: undefined,
+    filterValue: undefined,
+
+    getFilter: function(resultsRecordType, portfolioItemTypes){
+
+        portfolioItemTypes = portfolioItemTypes || [];
+        resultsRecordType = resultsRecordType || this.filterModelType;
+
+        var modelType = this.filterModelType.toLowerCase(),
+            pi_types = portfolioItemTypes.length > 0 ? _.map(portfolioItemTypes, function(pi){return pi.typePath.toLowerCase()}) : [],
+            idx = _.indexOf(pi_types, modelType),
+            type_idx = _.indexOf(pi_types, resultsRecordType.toLowerCase());
+        console.log('idx', idx,type_idx);
+        if (type_idx < idx) {
+            var properties = [];
+            for (var i = type_idx; i < idx; i++) {
+                if (i < 0) {
+                    properties.push("PortfolioItem");
+                } else {
+                    properties.push('Parent');
+                }
+            }
+            properties.push(this._getFilterFieldProperty())
+            return Ext.create('Rally.data.wsapi.Filter', {
+                property: properties.join('.'),
+                value: this.filterValue
+            });
+        } else if (type_idx === idx){
+            return Ext.create('Rally.data.wsapi.Filter', {
+                property: this._getFilterFieldProperty(),
+                value:this.filterValue
+            });
+        } else {
+            return null;
+        }
+    },
+    _getFilterFieldProperty: function(){
+        //if (Rally.technicalservices.common.DashboardFilter.referenceFieldAttributes[this.filterField]){
+        //    return this.filterField + '.' + Rally.technicalservices.common.DashboardFilter.referenceFieldAttributes[this.filterField];
+        //}
+        return this.filterField;
+    },
+    statics: {
+        publishedEventName: 'dashboardFilterUpdated',
+        requestEventName: 'requestDashboardFilter'
+    }
+});
+
+Ext.define('Rally.technicalservices.WsapiToolbox', {
+    singleton: true,
+    fetchWsapiCount: function(model, query_filters){
+        var deferred = Ext.create('Deft.Deferred');
+
+        var store = Ext.create('Rally.data.wsapi.Store',{
+            model: model,
+            fetch: ['ObjectID'],
+            filters: query_filters,
+            limit: 1,
+            pageSize: 1
+        }).load({
+            callback: function(records, operation, success){
+                if (success){
+                    deferred.resolve(operation.resultSet.totalRecords);
+                } else {
+                    deferred.reject(Ext.String.format("Error getting {0} count for {1}: {2}", model, query_filters.toString(), operation.error.errors.join(',')));
+                }
+            }
+        });
+        return deferred;
+    },
+    fetchModelTypePathByTypeDefinition: function(typeDef){
+        var deferred = Ext.create('Deft.Deferred');
+        var typeDefId = 0;
+        if (typeDef){
+            typeDefId = typeDef.replace('/typedefinition/','');
+        }
+
+        var store = Ext.create('Rally.data.wsapi.Store',{
+            model: 'TypeDefinition',
+            fetch: ['TypePath','Name'],
+            filters: [{
+                property: 'ObjectID',
+                value: typeDefId
+            }]
+        }).load({
+            callback: function(records, operation, success){
+                if (success && records && records.length > 0){
+                    deferred.resolve(records[0].get('TypePath'));
+                } else {
+                    deferred.resolve(null); //(Ext.String.format("Error getting TypeDefinition for {1}: {0}", operation.error.errors.join(','), typeDef));
+                }
+            }
+        });
+        return deferred;
+    },
+    fetchWsapiRecords: function(model, query_filters, fetch_fields, context){
+        var deferred = Ext.create('Deft.Deferred');
+
+        var store = Ext.create('Rally.data.wsapi.Store',{
+            model: model,
+            fetch: fetch_fields,
+            filters: query_filters,
+            context: context,
+            limit: Infinity
+        }).load({
+            callback: function(records, operation, success){
+                if (success){
+                    deferred.resolve(records);
+                } else {
+                    deferred.reject(Ext.String.format("Error getting {0} for {1}: {2}", model, query_filters.toString(), operation.error.errors.join(',')));
+                }
+            }
+        });
+        return deferred;
+    },
+    fetchReleases: function(timebox){
+
+        var deferred = Ext.create('Deft.Deferred'),
+            rec = timebox.getRecord(),
+            me = this;
+
+        if (rec === null) {
+            deferred.resolve([]);
+        }
+
+        Ext.create('Rally.data.wsapi.Store',{
+            model: 'Release',
+            fetch: ['ObjectID'],
+            filters: [{
+                property: 'Name',
+                value: rec.get('Name')
+            },{
+                property: 'ReleaseStartDate',
+                value: rec.get('ReleaseStartDate')
+            },{
+                property: 'ReleaseDate',
+                value: rec.get('ReleaseDate')
+            }],
+            limit: Infinity
+        }).load({
+            callback: function(records, operation, success){
+                if (success){
+                    deferred.resolve(records);
+                }   else {
+                    deferred.reject("Error loading Releases: " + operation.error.errors.join(','));
+                }
+            }
+        });
+        return deferred;
+    },
+
+    fetchAllowedValues: function(model,field_name) {
+        var deferred = Ext.create('Deft.Deferred');
+
+        Rally.data.ModelFactory.getModel({
+            type: model,
+            success: function(model) {
+                model.getField(field_name).getAllowedValueStore().load({
+                    callback: function(records, operation, success) {
+                        var values = Ext.Array.map(records, function(record) {
+                            return record.get('StringValue');
+                        });
+                        deferred.resolve(values);
+                    }
+                });
+            },
+            failure: function(msg) { deferred.reject('Error loading field values: ' + msg); }
+        });
+        return deferred;
+    },
+    fetchPortfolioItemTypes: function(){
+        var deferred = Ext.create('Deft.Deferred');
+
+        var store = Ext.create('Rally.data.wsapi.Store', {
+            model: 'TypeDefinition',
+            fetch: ['TypePath', 'Ordinal','Name'],
+            filters: [{
+                property: 'TypePath',
+                operator: 'contains',
+                value: 'PortfolioItem/'
+            }],
+            sorters: [{
+                property: 'Ordinal',
+                direction: 'ASC'
+            }]
+        });
+        store.load({
+            callback: function(records, operation, success){
+                if (success){
+                    var portfolioItemTypes = new Array(records.length);
+                    _.each(records, function(d){
+                        //Use ordinal to make sure the lowest level portfolio item type is the first in the array.
+                        var idx = Number(d.get('Ordinal'));
+                        portfolioItemTypes[idx] = { typePath: d.get('TypePath'), name: d.get('Name') };
+                        //portfolioItemTypes.reverse();
+                    });
+                    deferred.resolve(portfolioItemTypes);
+                } else {
+                    var error_msg = '';
+                    if (operation && operation.error && operation.error.errors){
+                        error_msg = operation.error.errors.join(',');
+                    }
+                    deferred.reject('Error loading Portfolio Item Types:  ' + error_msg);
+                }
+            }
+        });
+        return deferred.promise;
+    },
+    fetchDoneStates: function(){
+        var deferred = Ext.create('Deft.Deferred');
+        Rally.data.ModelFactory.getModel({
+            type: 'HierarchicalRequirement',
+            success: function(model) {
+                var field = model.getField('ScheduleState');
+                field.getAllowedValueStore().load({
+                    callback: function(records, operation, success) {
+                        if (success){
+                            var values = [];
+                            for (var i=records.length - 1; i > 0; i--){
+                                values.push(records[i].get('StringValue'));
+                                if (records[i].get('StringValue') == "Accepted"){
+                                    i = 0;
+                                }
+                            }
+                            deferred.resolve(values);
+                        } else {
+                            deferred.reject('Error loading ScheduleState values for User Story:  ' + operation.error.errors.join(','));
+                        }
+                    },
+                    scope: this
+                });
+            },
+            failure: function() {
+                var error = "Could not load schedule states";
+                deferred.reject(error);
+            }
+        });
+        return deferred.promise;
+    },
+    fetchTypeDefinition: function(typePath){
+        var deferred = Ext.create('Deft.Deferred');
+
+        var store = Ext.create('Rally.data.wsapi.Store',{
+            model: 'TypeDefinition',
+            fetch: ['TypePath','Name'],
+            filters: [{
+                property: 'TypePath',
+                value: typePath
+            }]
+        }).load({
+            callback: function(records, operation, success){
+                if (success && records && records.length > 0){
+                    deferred.resolve(records[0]);
+                } else {
+                    var message = "No records returned when loading Type Definition for " + typePath;
+                    if (!success){
+                        message = "Error loading Type Definition for " + typePath + ':  ' + operation.error.errors.join(',');
+                    }
+                    deferred.reject(message); //(Ext.String.format("Error getting TypeDefinition for {1}: {0}", operation.error.errors.join(','), typeDef));
+                }
+            }
+        });
+        return deferred;
+    }
+});
+
+Ext.define("Rally.techservices.Colors", {
+    singleton: true,
+    
+    // RGB values obtained from here: http://ux-blog.rallydev.com/?cat=23
+    grey4: "#C0C0C0",  // $grey4
+    orange: "#FF8200",  // $orange
+    gold: "#F6A900",  // $gold
+    yellow: "#FAD200",  // $yellow
+    lime: "#8DC63F",  // $lime
+    green_dk: "#1E7C00",  // $green_dk
+    blue_link: "#337EC6",  // $blue_link
+    blue: "#7FAEDB",  // $blue
+    purple : "#7832A5",  // $purple,
+    pink : "#DA1884",   // $pink,
+    grey7 : "#666",
+    black: '#000',
+
+    getCumulativeFlowColors : function() {
+        return [
+            this.grey4, this.orange, this.gold, this.yellow, this.lime, this.green_dk, this.blue_link, this.blue, this.purple, this.pink
+        ];
+    },
+    
+    getTimelineColors: function() {
+        return [
+            this.grey4, this.blue
+        ];
+    },
+
+    getBurnLineColor : function (){ return this.blue; },
+    
+    getTrendLineColor : function (){ return this.black; },
+    
+    getBurnColumnColor : function() { return this.lime; }
+});
+
+/**
+ * A link that pops up a version dialog box
+ */
+
+Ext.define('Rally.technicalservices.InfoLink',{
+    extend: 'Rally.ui.dialog.Dialog',
+    alias: 'widget.tsinfolink',
+    
+    /**
+     * @cfg {String} informationHtml
+     * Additional text to be displayed on the popup dialog (for exmaple,
+     * to add a description of the app's use or functionality)
+     */
+    informationHtml: null,
+    
+    /**
+     * 
+     * cfg {String} title
+     * The title for the dialog box
+     */
+    title: "Build Information",
+    
+    defaults: { padding: 5, margin: 5 },
+
+    closable: true,
+     
+    draggable: true,
+
+    autoShow: true,
+   
+    width: 350, 
+    
+    initComponent: function() {
+        var id = Ext.id(this);
+        this.title =  "<span class='icon-help'> </span>" + this.title;
+        this.callParent(arguments);
+    },
+    
+    _generateChecksum: function(string){
+        var chk = 0x12345678,
+            i;
+        string = string.replace(/var CHECKSUM = .*;/,"");
+        string = string.replace(/\s/g,"");  //Remove all whitespace from the string.
+        
+        for (i = 0; i < string.length; i++) {
+            chk += (string.charCodeAt(i) * i);
+        }
+    
+        return chk;
+    },
+    
+    _checkChecksum: function(container) {
+        var deferred = Ext.create('Deft.Deferred');
+        console.log("_checkChecksum", container);
+        var me = this;
+        
+        Ext.Ajax.request({
+            url: document.URL,
+            params: {
+                id: 1
+            },
+            success: function (response) {
+                text = response.responseText;
+                if ( CHECKSUM ) {
+                    if ( CHECKSUM !== me._generateChecksum(text) ) {
+                        console.log("Checksums don't match!");
+                        deferred.resolve(false);
+                        return;
+                    }
+                }
+                deferred.resolve(true);
+            }
+        });
+        
+        return deferred.promise;
+    },
+    
+    afterRender: function() {
+        var app = Rally.getApp();
+        
+        if (! app.isExternal() ) {
+                
+            this._checkChecksum(app).then({
+                scope: this,
+                success: function(result){
+                    if ( !result ) {
+                        this.addDocked({
+                            xtype:'container',
+                            cls: 'build-info',
+                            padding: 2,
+                            html:'<span class="icon-warning"> </span>Checksums do not match'
+                        });
+                    }
+                },
+                failure: function(msg){
+                    console.log("oops:",msg);
+                }
+            });
+        } else {
+            this.addDocked({
+                xtype:'container',
+                cls: 'build-info',
+                padding: 2,
+                html:'... Running externally'
+            });
+        }
+        this.callParent(arguments);
+    },
+    
+    beforeRender: function() {
+        var me = this;
+        this.callParent(arguments);
+
+        if (this.informationHtml) {
+            this.addDocked({
+                xtype: 'component',
+                componentCls: 'intro-panel',
+                padding: 2,
+                html: this.informationHtml
+            });
+        }
+        
+        this.addDocked({
+            xtype:'container',
+            cls: 'build-info',
+            padding: 2,
+            html:"This app was created by the Rally Technical Services Team."
+        });
+        
+        if ( APP_BUILD_DATE ) {
+            this.addDocked({
+                xtype:'container',
+                cls: 'build-info',
+                padding: 2,
+                html:'Build date/time: ' + APP_BUILD_DATE
+            });
+        }
+    }
+});
+
+/*
+ */
+Ext.define('Rally.technicalservices.Logger',{
+    constructor: function(config){
+        Ext.apply(this,config);
+    },
+    log: function(args){
+        var timestamp = "[ " + Ext.util.Format.date(new Date(), "Y-m-d H:i:s.u") + " ]";
+        //var output_args = arguments;
+        //output_args.unshift( [ "[ " + timestamp + " ]" ] );
+        //output_args = Ext.Array.push(output_args,arguments);
+        
+        var output_args = [];
+        output_args = Ext.Array.push(output_args,[timestamp]);
+        output_args = Ext.Array.push(output_args, Ext.Array.slice(arguments,0));
+
+        window.console && console.log.apply(console,output_args);
+    }
+
+});
+
+Ext.define('CA.technicalservices.AlternativeTimeline',{
+    extend: 'Ext.container.Container',
+    alias: 'widget.tsalternativetimeline',
+    
+    layout: 'border', 
+    
+    items: [
+        {xtype:'container', itemId:'selector_box', region: 'west', layout: 'vbox' },
+        {xtype:'container', itemId:'display_box',  region:'center'}
+    ],
+    
+    config: {
+        records: [],
+        
+        chartStartDate: Rally.util.DateTime.add(new Date(),'month', -3),
+        
+        pageSize: 7,
+        
+        plannedStartField: 'PlannedStartDate',
+        plannedEndField  : 'PlannedEndDate',
+        
+        actualStartField : 'ActualStartDate',
+        actualEndField   : 'ActualEndDate'
+    },
+
+    initComponent: function() {
+        
+        this.callParent(arguments);
+
+        this._buildChart(this.records);
+    },
+    
+    _buildChart: function(records) {
+        this._processItems(records);
+        
+        var selector_box = this.down('#selector_box');
+        
+        var display_box  = this.down('#display_box');
+        
+        selector_box.add(this._getUpButtonConfig());
+        selector_box.add({ xtype:'container', flex: 1 });
+        selector_box.add(this._getDownButtonConfig());
+        
+        this.highchart = display_box.add({
+            xtype: 'rallychart',
+            region:'center',
+           
+            loadMask: false,
+            chartData: this._getChartData(),
+            chartColors: Rally.techservices.Colors.getTimelineColors(),
+            chartConfig: this._getChartConfig()
+        });
+    },
+    
+    _processItems: function(records) {
+
+        console.log('_processItems', records);
+        
+        this.dateCategories = this._getDateCategories();
+        
+        this.categories = Ext.Array.map(records, function(record) { 
+            return Ext.String.format( '{0}: {1}',
+                record.get('FormattedID'),
+                record.get('Name')
+            );
+        });
+                
+        var planned_series = { 
+            name: 'Planned',
+            data: this._getPlannedRangesFromItems(records,this.dateCategories)
+        };
+        
+        var actual_series = {
+            name: 'Actual',
+            data: this._getActualRangesFromItems(records, this.dateCategories)
+        };
+        
+        this.series = [
+            actual_series,
+            planned_series
+        ];
+    },
+    
+    _getDateCategories: function() {
+        var start_date = this.chartStartDate;
+        
+        return Ext.Array.map( _.range(0,365), function(index) {
+            var date = Rally.util.DateTime.add(start_date, 'day', index);
+            return this._getCategoryFromDate(date);
+        },this);
+    },
+   
+    _getCategoryFromDate: function(date) {
+        return Ext.Date.format(date, 'Y-m-d');
+    },
+    
+    _getPositionOnTimeline: function(categories, date) {
+        var category_date = this._getCategoryFromDate(date);
+        
+        var index = Ext.Array.indexOf(categories,category_date);
+        
+        if ( index > -1 ) { return index; }
+        
+        if (category_date > categories[categories.length-1] ) { return categories.length-1; }
+        
+        return 0;
+    },
+    
+    _getPlannedRangesFromItems: function(items, categories) {
+        var plannedStartField = this.plannedStartField;
+        var plannedEndField   = this.plannedEndField;
+        
+        return Ext.Array.map(items, function(item) {
+            var start_index = this._getPositionOnTimeline(categories, item.get(plannedStartField) );
+            var end_index   = this._getPositionOnTimeline(categories, item.get(plannedEndField) );
+            
+            return [ start_index, end_index ];
+        },this);
+    },
+    
+    _getActualRangesFromItems: function(items, categories) {
+        var actualStartField = this.actualStartField;
+        var actualEndField = this.actualEndField;
+        
+        return Ext.Array.map(items, function(item) {
+            var start_index = this._getPositionOnTimeline(categories,item.get(actualStartField));
+            var end_index   = this._getPositionOnTimeline(categories,item.get(actualEndField));
+            
+            
+            if ( Ext.isEmpty(item.get(actualStartField) ) ) {
+                start_index = null;
+            }
+            
+            if ( Ext.isEmpty(item.get(actualEndField)) ) {
+                end_index = this._getPositionOnTimeline(categories,new Date());
+            }
+            return [ start_index, end_index ];
+        },this);
+    },
+    
+    /**
+     * Generate x axis categories and y axis series data for the chart
+     */
+    _getChartData: function() {
+        return {
+            categories: this.categories,
+            min: this.pageSize,
+            series: this.series
+        };
+    },
+    
+    _getExtremes: function(chart, id) {
+        var axis = chart.get(id); // must set the axis' id property
+        return axis.getExtremes();
+    },
+
+    _getPlotBands: function() {
+        var me = this;
+        var start_date = me.chartStartDate;
+        var bands = Ext.Array.map( _.range(0,12), function(index) {
+            var band_start_date = Rally.util.DateTime.add(start_date, 'month', index);
+            var band_end_date = Rally.util.DateTime.add(band_start_date, 'month', 1);
+            
+            var value = Ext.Date.format(band_start_date,'M');
+            
+            var to = Ext.Array.indexOf(me.dateCategories,me._getCategoryFromDate(band_end_date)) - 1;
+            if ( to < 0 ) { to = 364; }
+            
+            return {
+                color: '#eee',
+                from: Ext.Array.indexOf(me.dateCategories,me._getCategoryFromDate(band_start_date)) +1,
+                to: to,
+                label: {
+                    text: value,
+                    align: 'center',
+                    y: -2
+                }
+            }
+        },this);
+        
+        return bands;
+    },
+    
+    _getPlotLines: function() {
+        var me = this;
+        
+        var start_date = me.chartStartDate;
+        var month_lines = Ext.Array.map( _.range(0,12), function(index) {
+            var date = Rally.util.DateTime.add(start_date, 'month', index);
+            var value = Ext.Date.format(date,'z');
+            
+            return {
+                color: '#ccc',
+                width: 1,
+                value: value
+            }
+        },this);
+        
+        var today_line = {
+            color: '#c00',
+            width: 1,
+            value: Ext.Array.indexOf(me.dateCategories,me._getCategoryFromDate(new Date()))
+        };
+        
+        return Ext.Array.merge( month_lines, today_line );
+    },
+    
+    
+    /**
+     * Generate a valid Highcharts configuration object to specify the column chart
+     */
+    _getChartConfig: function() {
+        var me = this;
+        return {
+            chart: {
+                inverted: true,
+                type: 'columnrange',
+                events: {
+                    load: function(evt) {
+                        me._setChart(this);
+                    }
+                }
+            },
+            title: {
+                text: ''
+            },
+            subtitle: {
+                text: ''
+            },
+            xAxis: {
+                min: 0,
+                id: 'xAxis',
+                max: this.pageSize
+            },
+            yAxis: {
+                id: 'yAxis',
+                tickInterval: 366,
+                categories: this.categories,
+                min: 0,
+                max: 366,
+                title: {
+                    text: ' '
+                },
+                plotBands: this._getPlotBands(),
+                plotLines: this._getPlotLines(),
+                labels: {
+                    align: 'right',
+                    formatter: function() {
+                        return "";
+                    }
+                }
+            },
+
+            tooltip: {
+                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                    pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y:.1f} mm</b></td></tr>',
+                    footerFormat: '</table>',
+                    shared: true,
+                    useHTML: true,
+                    enabled: false
+            },
+            
+            legend: { enabled: false },
+            
+            plotOptions: {
+
+                columnrange: {
+                    dataLabels: {
+                        enabled: false,
+                        formatter: function() { return this.y + "!"; }
+                    }
+                },
+                
+                series: {
+                    pointPadding: 0
+                }
+            }
+        };
+    },
+    
+    _setChart: function(chart) {
+        this.highchart = chart;
+        this._enableChartButtons();
+    },
+    
+    _enableChartButtons: function() {
+        var up_button = this.down('#up_button');
+        var down_button = this.down('#down_button');
+        
+        up_button.setDisabled(true);
+        down_button.setDisabled(true);
+        
+        if ( this.highchart ) {
+            var extremes = this._getExtremes(this.highchart,'xAxis');
+            
+            if ( extremes.min > 0 ) {
+                up_button.setDisabled(false);
+            }
+            
+            if ( extremes.max < extremes.dataMax ) {
+                down_button.setDisabled(false);
+            }
+        }
+    },
+    
+    _getUpButtonConfig: function() {
+        return { 
+            xtype:'rallybutton', 
+            itemId: 'up_button', 
+            text: '<span class="icon-up"> </span>', 
+            disabled: true, 
+            cls: 'secondary small',
+            listeners: {
+                scope: this,
+                click: function() {
+                    if ( this.highchart ) {
+                        this._scrollUp(this.highchart);
+                    }
+                }
+            }
+        };
+    },
+    
+    _getDownButtonConfig: function() {
+        return { 
+            xtype:'rallybutton', 
+            itemId: 'down_button', 
+            text: '<span class="icon-down"> </span>', 
+            disabled: true, 
+            cls: 'secondary small',
+            listeners: {
+                scope: this,
+                click: function() {
+                    if ( this.highchart ) {
+                        this._scrollDown(this.highchart);
+                    }
+                }
+            }
+        };
+    },
+    
+    _setExtremes: function(chart, id, min, max) {
+        var axis = chart.get(id); // must set the axis' id property
+        var extremes = this._getExtremes(chart,id);
+        
+        axis.setExtremes(min,max);
+        this._enableChartButtons();
+    },
+    
+    _scrollUp: function(chart) {
+        var extremes = this._getExtremes(chart,'xAxis');
+        var new_max = extremes.max - 1;
+        var new_min = extremes.min - 1;
+        
+        if ( new_min < 0 ) { new_min = 0; }
+        if ( new_max < new_min + this.pageSize - 1) { 
+            new_max = new_min + this.pageSize - 1;
+        }
+        
+        this._setExtremes(chart,'xAxis',new_min,new_max);
+    },
+    
+    _scrollDown: function(chart) {
+        var extremes = this._getExtremes(chart,'xAxis');
+        var new_max = extremes.max + 1;
+        var new_min = extremes.min + 1;
+        
+        //if ( new_max > extremes.dataMax ) { new_max = extremes.dataMax; }
+        if ( new_min > new_max - this.pageSize + 1 ) { 
+            new_min =  new_max - this.pageSize + 1;
+            if ( new_min < 0 ) { new_min = 0; }
+        }
+        
+        this._setExtremes(chart,'xAxis',new_min,new_max);
+    }
+    
+    
+});
+Ext.define("TSTimelineByPFV", {
+    extend: 'Rally.app.App',
+    componentCls: 'app',
+    logger: new Rally.technicalservices.Logger(),
+    defaults: { margin: 10 },
+    
+    integrationHeaders : {
+        name : "TSTimelineByPFV"
+    },
+                        
+    launch: function() {
+        // waiting for subscribe
+        this.subscribe(this, Rally.technicalservices.common.DashboardFilter.publishedEventName, this.updateDashboardFilter, this);
+        this.publish(Rally.technicalservices.common.DashboardFilter.requestEventName, this);
+    },
+    
+    _updateData: function() {
+        var me = this;
+        
+        this._loadItems().then({
+            success: function(data) {
+                me.setLoading(false);
+                
+                me._addTimeline(data);
+            },
+            failure: function(msg) {
+                Ext.Msg.alert("Problem loading data", msg);
+            }
+        });
+    },
+    
+    _loadItems: function() {
+        this.setLoading('Gathering items...');
+        
+        var filters = this._getFilters();
+        var beginning_iso = Rally.util.DateTime.toIsoString( Rally.util.DateTime.add(new Date(),'month', -3) );
+        
+        filters = filters.and(Ext.create('Rally.data.wsapi.Filter',{
+            property:'PlannedEndDate', 
+            operator: '>', 
+            value: beginning_iso
+        }));
+        
+        this.logger.log('model:', this.model);
+        this.logger.log('filters:', filters);
+        
+        var config = {
+            model: this.model,
+            fetch: ['FormattedID','Name','PlannedEndDate', 'PlannedStartDate',
+                'ActualStartDate', 'ActualEndDate'],
+            sorters: [{property:'PlannedEndDate',direction:'ASC'}],
+            filters: filters
+        };
+        
+        this.logger.log('config:', config);
+        
+        return this._loadWsapiRecords(config);
+    },
+    
+    updateDashboardFilter: function(dashboardSettings){
+        this.logger.log('updateDashboardFilter', dashboardSettings);
+
+        this.model = dashboardSettings.filterModelType;
+        
+        this.removeAll();
+        this.filter = Ext.create('Rally.data.wsapi.Filter',{
+            property:dashboardSettings.filterField, 
+            value: dashboardSettings.filterValue
+        });
+
+        this._updateData();
+    },
+    
+    _getFilters: function() {
+        return this.filter;
+    },
+    
+    _addTimeline: function(records) {
+        this.add({
+            xtype: 'tsalternativetimeline',
+            height: this.getHeight() - 20 ,
+            width: this.getWidth() - 20,
+            records: records
+        });
+
+        this.setLoading(false);
+    },
+      
+    _loadWsapiRecords: function(config){
+        var deferred = Ext.create('Deft.Deferred');
+        var me = this;
+        var default_config = {
+            model: 'Defect',
+            fetch: ['ObjectID']
+        };
+        this.logger.log("Starting load:",config.model);
+        Ext.create('Rally.data.wsapi.Store', Ext.Object.merge(default_config,config)).load({
+            callback : function(records, operation, successful) {
+                if (successful){
+                    deferred.resolve(records);
+                } else {
+                    me.logger.log("Failed: ", operation);
+                    deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
+                }
+            }
+        });
+        return deferred.promise;
+    },
+    
+    getOptions: function() {
+        return [
+            {
+                text: 'About...',
+                handler: this._launchInfo,
+                scope: this
+            }
+        ];
+    },
+    
+    _launchInfo: function() {
+        if ( this.about_dialog ) { this.about_dialog.destroy(); }
+        this.about_dialog = Ext.create('Rally.technicalservices.InfoLink',{});
+    },
+    
+    isExternal: function(){
+        return typeof(this.getAppId()) == 'undefined';
+    },
+    
+    //onSettingsUpdate:  Override
+    onSettingsUpdate: function (settings){
+        this.logger.log('onSettingsUpdate',settings);
+        // Ext.apply(this, settings);
+        this.launch();
+    }
+});
+
+            
+               Rally.launchApp('TSTimelineByPFV', {
+                   name: 'TS Timeline by Portfolio Field Value'
+               });
+        });
+    </script>
+    
+    <style type="text/css">
+
+.app {
+}
+.tsinfolink {
+    position:absolute;
+    right:0px;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    text-align: center;
+    color: white;
+    background: #C0C0C0;
+    border-style: solid;
+    border-width: 1px;
+    margin-top: 25px;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.x-border-layout-ct {
+    background-color: #fff;
+}
+    </style>
+
+</head>
+<body></body>
+</html>
