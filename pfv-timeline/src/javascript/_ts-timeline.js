@@ -33,6 +33,10 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
     _buildChart: function(records) {
         this._processItems(records);
         
+        if ( this.records.length - 1 < this.pageSize) {
+            this.pageSize = this.records.length - 1;
+        }
+        
         var selector_box = this.down('#selector_box');
         
         var display_box  = this.down('#display_box');
@@ -40,8 +44,12 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
         selector_box.add(this._getUpButtonConfig());
         selector_box.add({ xtype:'container', flex: 1 });
         selector_box.add(this._getDownButtonConfig());
-        
-        this.highchart = display_box.add({
+                
+        this.highchart = display_box.add(this._getTimelineConfig());
+    },
+    
+    _getTimelineConfig: function() {
+        var config = {
             xtype: 'rallychart',
             region:'center',
            
@@ -49,7 +57,12 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
             chartData: this._getChartData(),
             chartColors: Rally.techservices.Colors.getTimelineColors(),
             chartConfig: this._getChartConfig()
-        });
+        };
+        
+        if ( this.height ) { config.height = this.height; }
+        
+        console.log('config', config);
+        return config;
     },
     
     _processItems: function(records) {
@@ -140,11 +153,13 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
     
     /**
      * Generate x axis categories and y axis series data for the chart
+     * (This chart is sideway, so categories represent the vertical axis)
      */
     _getChartData: function() {
+        
         return {
             categories: this.categories,
-            min: this.pageSize,
+            //min: min,
             series: this.series
         };
     },
@@ -211,7 +226,10 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
      */
     _getChartConfig: function() {
         var me = this;
-        return {
+        
+        var max = this.pageSize;
+        
+        var chart_config = {
             chart: {
                 inverted: true,
                 type: 'columnrange',
@@ -230,7 +248,7 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
             xAxis: {
                 min: 0,
                 id: 'xAxis',
-                max: this.pageSize
+                max: max
             },
             yAxis: {
                 id: 'yAxis',
@@ -277,6 +295,8 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
                 }
             }
         };
+        
+        return chart_config;
     },
     
     _setChart: function(chart) {
@@ -329,6 +349,7 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
             text: '<span class="icon-down"> </span>', 
             disabled: true, 
             cls: 'secondary small',
+            margin: '0 0 2 0',
             listeners: {
                 scope: this,
                 click: function() {
