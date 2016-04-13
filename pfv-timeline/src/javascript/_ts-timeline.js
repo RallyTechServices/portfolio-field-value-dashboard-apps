@@ -24,10 +24,17 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
     },
 
     initComponent: function() {
-        
         this.callParent(arguments);
 
+        this.chartStartDate = this._moveToStartOfMonth(this.chartStartDate);
+        
         this._buildChart(this.records);
+    },
+    
+    _moveToStartOfMonth: function(start_date) {
+        var day_of_month = start_date.getDate();
+        var shift = -1 * ( day_of_month - 1 );         
+        return Rally.util.DateTime.add(start_date, 'day', shift);
     },
     
     _buildChart: function(records) {
@@ -61,13 +68,10 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
         
         if ( this.height ) { config.height = this.height; }
         
-        console.log('config', config);
         return config;
     },
     
     _processItems: function(records) {
-
-        console.log('_processItems', records);
         
         this.dateCategories = this._getDateCategories();
         
@@ -189,7 +193,8 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
                     text: value,
                     align: 'center',
                     y: -2
-                }
+                },
+                zIndex: 3
             }
         },this);
         
@@ -210,11 +215,12 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
                 value: value
             }
         },this);
-        
+                
         var today_line = {
             color: '#c00',
             width: 1,
-            value: Ext.Array.indexOf(me.dateCategories,me._getCategoryFromDate(new Date()))
+            value: Ext.Array.indexOf(me.dateCategories,me._getCategoryFromDate(new Date())),
+            zIndex: 4
         };
         
         return Ext.Array.merge( month_lines, today_line );

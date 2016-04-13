@@ -9,9 +9,19 @@ Ext.define("TSTimelineByPFV", {
     },
                         
     launch: function() {
-        // waiting for subscribe
-        this.subscribe(this, Rally.technicalservices.common.DashboardFilter.publishedEventName, this.updateDashboardFilter, this);
-        this.publish(Rally.technicalservices.common.DashboardFilter.requestEventName, this);
+        Rally.technicalservices.WsapiToolbox.fetchPortfolioItemTypes().then({
+            success: function(portfolioItemTypes){
+                this.portfolioItemTypes = portfolioItemTypes;
+                // waiting for subscribe
+                this.subscribe(this, Rally.technicalservices.common.DashboardFilter.publishedEventName, this.updateDashboardFilter, this);
+                this.publish(Rally.technicalservices.common.DashboardFilter.requestEventName, this);
+            },
+            failure: function(msg){
+                this.logger.log('failed to load Portfolio Item Types', msg);
+                Rally.ui.notify.Notifier.showError({message: msg});
+            },
+            scope: this
+        });
     },
     
     _updateData: function() {
