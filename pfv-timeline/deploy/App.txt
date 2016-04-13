@@ -3,11 +3,11 @@
 <head>
     <title>TS Timeline by Portfolio Field Value</title>
     <!--  (c) 2015,2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Tue Apr 12 2016 14:21:43 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Apr 13 2016 14:26:26 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Apr 12 2016 14:21:43 GMT-0700 (PDT)";
-        var CHECKSUM = 20478072346;
+        var APP_BUILD_DATE = "Wed Apr 13 2016 14:26:26 GMT-0700 (PDT)";
+        var CHECKSUM = 21439829103;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -508,10 +508,17 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
     },
 
     initComponent: function() {
-        
         this.callParent(arguments);
 
+        this.chartStartDate = this._moveToStartOfMonth(this.chartStartDate);
+        
         this._buildChart(this.records);
+    },
+    
+    _moveToStartOfMonth: function(start_date) {
+        var day_of_month = start_date.getDate();
+        var shift = -1 * ( day_of_month - 1 );         
+        return Rally.util.DateTime.add(start_date, 'day', shift);
     },
     
     _buildChart: function(records) {
@@ -545,13 +552,10 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
         
         if ( this.height ) { config.height = this.height; }
         
-        console.log('config', config);
         return config;
     },
     
     _processItems: function(records) {
-
-        console.log('_processItems', records);
         
         this.dateCategories = this._getDateCategories();
         
@@ -673,7 +677,8 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
                     text: value,
                     align: 'center',
                     y: -2
-                }
+                },
+                zIndex: 3
             }
         },this);
         
@@ -694,11 +699,12 @@ Ext.define('CA.technicalservices.AlternativeTimeline',{
                 value: value
             }
         },this);
-        
+                
         var today_line = {
             color: '#c00',
             width: 1,
-            value: Ext.Array.indexOf(me.dateCategories,me._getCategoryFromDate(new Date()))
+            value: Ext.Array.indexOf(me.dateCategories,me._getCategoryFromDate(new Date())),
+            zIndex: 4
         };
         
         return Ext.Array.merge( month_lines, today_line );
@@ -893,9 +899,19 @@ Ext.define("TSTimelineByPFV", {
     },
                         
     launch: function() {
-        // waiting for subscribe
-        this.subscribe(this, Rally.technicalservices.common.DashboardFilter.publishedEventName, this.updateDashboardFilter, this);
-        this.publish(Rally.technicalservices.common.DashboardFilter.requestEventName, this);
+        Rally.technicalservices.WsapiToolbox.fetchPortfolioItemTypes().then({
+            success: function(portfolioItemTypes){
+                this.portfolioItemTypes = portfolioItemTypes;
+                // waiting for subscribe
+                this.subscribe(this, Rally.technicalservices.common.DashboardFilter.publishedEventName, this.updateDashboardFilter, this);
+                this.publish(Rally.technicalservices.common.DashboardFilter.requestEventName, this);
+            },
+            failure: function(msg){
+                this.logger.log('failed to load Portfolio Item Types', msg);
+                Rally.ui.notify.Notifier.showError({message: msg});
+            },
+            scope: this
+        });
     },
     
     _updateData: function() {
