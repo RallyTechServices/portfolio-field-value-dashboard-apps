@@ -3,5 +3,6 @@
     "className": "pfv-selector",
     "server": "https://demo-west.rallydev.com",
     "sdk": "2.0",
-    "apiKey": "_PUT_APIKEY_HERE_"
+    "apiKey": "_PUT_APIKEY_HERE_",
+    "story": "US410"
 }
