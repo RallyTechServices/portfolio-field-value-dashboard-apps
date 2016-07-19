@@ -31,6 +31,35 @@ Ext.define("pfv-selector", {
     _getFieldValue: function(){
         return this.fieldValuePicker.getValue();
     },
+    
+    _getFieldType: function(){
+        var cb = this.fieldValuePicker;
+        var type = "unknown";
+        
+        if (cb && cb.model){
+            var field = cb.model.getField(this._getFieldName());
+
+            if (field) {
+                this.logger.log(field);
+                if ( field.attributeDefinition && field.attributeDefinition.AttributeType) {
+                    type = field.attributeDefinition.AttributeType;
+                }
+            }
+        }
+        
+        this.logger.log("Field is of type:", type);
+        return type;
+    },
+    
+    _getOperatorForFieldType: function(field_type) {
+        var map = {
+            'COLLECTION': 'contains'
+        };
+        
+        return map[field_type] || '=';
+        
+    },
+    
     getState: function(){
         return this.dashboardFilter || null;
     },
@@ -47,6 +76,9 @@ Ext.define("pfv-selector", {
             df.filterField = this._getFieldName();
             df.filterFieldDisplayName = this._getFieldDisplayName();
             df.filterValue = cb.getValue();
+            
+            df.filterOperator = this._getOperatorForFieldType(this._getFieldType());
+            
             this.setDashboardFilter(df);
         }
     },
@@ -54,8 +86,10 @@ Ext.define("pfv-selector", {
         this.dashboardFilter = df;
 
         var filters = df.getFilter(df.filterModelType, []);
+        
         Rally.technicalservices.WsapiToolbox.fetchWsapiCount(df.filterModelType, filters).then({
             scope: this,
+            
             success: function(count){
                 this.resultsStatus.update({message: count + ' items found'});
             },
@@ -120,6 +154,7 @@ Ext.define("pfv-selector", {
         });
 
     },
+    
     _updateLabel: function(cb){
         if (cb && cb.model){
             var field = cb.model.getField(this._getFieldName());

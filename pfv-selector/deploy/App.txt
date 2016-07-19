@@ -2,12 +2,14 @@
 <html>
 <head>
     <title>Portfolio Field Value Selector</title>
-    <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Mar 07 2016 18:20:25 GMT-0800 (PST) -->
+    <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
+    <!--  Build Date: Mon Jul 18 2016 17:31:55 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Mar 07 2016 18:20:25 GMT-0800 (PST)";
-        var CHECKSUM = 10015494904;
+        var APP_BUILD_DATE = "Mon Jul 18 2016 17:31:55 GMT-0700 (PDT)";
+        var STORY    = "US410";
+        var BUILDER  = "curmudgeon";
+        var CHECKSUM = 10856691911;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -21,6 +23,7 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
     filterModelType: undefined,
     filterField: undefined,
     filterValue: undefined,
+    filterOperator: '=',
 
     getFilter: function(resultsRecordType, portfolioItemTypes){
 
@@ -31,7 +34,7 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
             pi_types = portfolioItemTypes.length > 0 ? _.map(portfolioItemTypes, function(pi){return pi.typePath.toLowerCase()}) : [],
             idx = _.indexOf(pi_types, modelType),
             type_idx = _.indexOf(pi_types, resultsRecordType.toLowerCase());
-        console.log('idx', idx,type_idx);
+        //console.log('idx', idx,type_idx);
         if (type_idx < idx) {
             var properties = [];
             for (var i = type_idx; i < idx; i++) {
@@ -44,11 +47,13 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
             properties.push(this._getFilterFieldProperty())
             return Ext.create('Rally.data.wsapi.Filter', {
                 property: properties.join('.'),
+                operator: this.filterOperator,
                 value: this.filterValue
             });
         } else if (type_idx === idx){
             return Ext.create('Rally.data.wsapi.Filter', {
                 property: this._getFilterFieldProperty(),
+                operator: this.filterOperator,
                 value:this.filterValue
             });
         } else {
@@ -479,6 +484,35 @@ Ext.define("pfv-selector", {
     _getFieldValue: function(){
         return this.fieldValuePicker.getValue();
     },
+    
+    _getFieldType: function(){
+        var cb = this.fieldValuePicker;
+        var type = "unknown";
+        
+        if (cb && cb.model){
+            var field = cb.model.getField(this._getFieldName());
+
+            if (field) {
+                this.logger.log(field);
+                if ( field.attributeDefinition && field.attributeDefinition.AttributeType) {
+                    type = field.attributeDefinition.AttributeType;
+                }
+            }
+        }
+        
+        this.logger.log("Field is of type:", type);
+        return type;
+    },
+    
+    _getOperatorForFieldType: function(field_type) {
+        var map = {
+            'COLLECTION': 'contains'
+        };
+        
+        return map[field_type] || '=';
+        
+    },
+    
     getState: function(){
         return this.dashboardFilter || null;
     },
@@ -495,6 +529,9 @@ Ext.define("pfv-selector", {
             df.filterField = this._getFieldName();
             df.filterFieldDisplayName = this._getFieldDisplayName();
             df.filterValue = cb.getValue();
+            
+            df.filterOperator = this._getOperatorForFieldType(this._getFieldType());
+            
             this.setDashboardFilter(df);
         }
     },
@@ -502,8 +539,10 @@ Ext.define("pfv-selector", {
         this.dashboardFilter = df;
 
         var filters = df.getFilter(df.filterModelType, []);
+        
         Rally.technicalservices.WsapiToolbox.fetchWsapiCount(df.filterModelType, filters).then({
             scope: this,
+            
             success: function(count){
                 this.resultsStatus.update({message: count + ' items found'});
             },
@@ -568,6 +607,7 @@ Ext.define("pfv-selector", {
         });
 
     },
+    
     _updateLabel: function(cb){
         if (cb && cb.model){
             var field = cb.model.getField(this._getFieldName());

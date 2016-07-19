@@ -4,6 +4,7 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
     filterModelType: undefined,
     filterField: undefined,
     filterValue: undefined,
+    filterOperator: '=',
 
     getFilter: function(resultsRecordType, portfolioItemTypes){
 
@@ -14,7 +15,7 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
             pi_types = portfolioItemTypes.length > 0 ? _.map(portfolioItemTypes, function(pi){return pi.typePath.toLowerCase()}) : [],
             idx = _.indexOf(pi_types, modelType),
             type_idx = _.indexOf(pi_types, resultsRecordType.toLowerCase());
-        console.log('idx', idx,type_idx);
+        //console.log('idx', idx,type_idx);
         if (type_idx < idx) {
             var properties = [];
             for (var i = type_idx; i < idx; i++) {
@@ -27,11 +28,13 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
             properties.push(this._getFilterFieldProperty())
             return Ext.create('Rally.data.wsapi.Filter', {
                 property: properties.join('.'),
+                operator: this.filterOperator,
                 value: this.filterValue
             });
         } else if (type_idx === idx){
             return Ext.create('Rally.data.wsapi.Filter', {
                 property: this._getFilterFieldProperty(),
+                operator: this.filterOperator,
                 value:this.filterValue
             });
         } else {
