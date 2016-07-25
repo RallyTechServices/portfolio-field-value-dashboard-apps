@@ -279,7 +279,7 @@ Ext.define("pfv-custom-grid", {
     _shouldEnableAddNew: function() {
         return !_.contains(this.disallowedAddNewTypes, this.getSetting('type').toLowerCase());
     },
-
+    
     _shouldEnableRanking: function(){
         return this.getSetting('type').toLowerCase() !== 'task';
     },

@@ -13,9 +13,32 @@ Ext.define("pfv-selector", {
     publishedEventName: Rally.technicalservices.common.DashboardFilter.publishedEventName,
 
     launch: function() {
-        this._addSelector(this.getSettings());
-        this.subscribe(this, Rally.technicalservices.common.DashboardFilter.requestEventName, this._requestDashboardFilter, this);
+        this._getModel(this._getModelType()).then({
+            scope: this,
+            success: function(model) {
+                this.model = model;
+                this._addSelector(this.getSettings());
+                this.subscribe(this, Rally.technicalservices.common.DashboardFilter.requestEventName, this._requestDashboardFilter, this);
+            },
+            failure: function(msg) {
+                Ext.Msg.alert('',msg);
+            }
+        });
     },
+    _getModel: function(model_type) {
+        var deferred = Ext.create('Deft.Deferred');
+        Rally.data.ModelFactory.getModel({
+            type: model_type,
+            success: function(model) {
+                deferred.resolve(model);
+            },
+            failure: function(msg) {
+                deferred.reject(msg);
+            }
+        });
+        return deferred.promise;
+    },
+    
     _getModelType: function(){
         return this.getSetting('selectorType');
     },
@@ -65,19 +88,21 @@ Ext.define("pfv-selector", {
     },
     applyState: function(state) {
         if (!Ext.isEmpty(state) && !Ext.Object.isEmpty(state)) {
-            console.log('applyState', state);
             this.setDashboardFilter(state);
         }
     },
     _updateFilter: function(cb){
         if (cb){
-           var df = Ext.create('Rally.technicalservices.common.DashboardFilter');
-            df.filterModelType = this._getModelType();
-            df.filterField = this._getFieldName();
-            df.filterFieldDisplayName = this._getFieldDisplayName();
-            df.filterValue = cb.getValue();
-            
-            df.filterOperator = this._getOperatorForFieldType(this._getFieldType());
+            //if ( !Ext.isArray(cb.getValue())) {
+                
+                var df = Ext.create('Rally.technicalservices.common.DashboardFilter');
+                    df.filterModelType = this._getModelType();
+                    df.filterField = this._getFieldName();
+                    df.filterFieldDisplayName = this._getFieldDisplayName();
+                    df.filterValue = cb.getValue();
+                    
+                    df.filterOperator = this._getOperatorForFieldType(this._getFieldType());
+            //}
             
             this.setDashboardFilter(df);
         }
@@ -86,6 +111,11 @@ Ext.define("pfv-selector", {
         this.dashboardFilter = df;
 
         var filters = df.getFilter(df.filterModelType, []);
+                
+        if ( Ext.isEmpty(filters) ) {
+            this.resultsStatus.update({message: ''});
+            return;
+        }
         
         Rally.technicalservices.WsapiToolbox.fetchWsapiCount(df.filterModelType, filters).then({
             scope: this,
@@ -114,7 +144,7 @@ Ext.define("pfv-selector", {
             padding: 15
         });
 
-        this.fieldValuePicker = ct.add({
+        var picker_config = {
             xtype: 'rallyfieldvaluecombobox',
             model: this._getModelType(),
             field: this._getFieldName(),
@@ -125,7 +155,12 @@ Ext.define("pfv-selector", {
             margin: 15,
             width: 400,
             flex: 1
-        });
+        };
+        
+        if (this._isAMultiSelectField(this._getFieldName()) ) {
+            picker_config.multiSelect = true;
+        }
+        this.fieldValuePicker = ct.add(picker_config);
         
         this.fieldValuePicker.on('ready', this._updateLabel, this, {single: true});
         this.fieldValuePicker.on('change', this._updateFilter, this);
@@ -153,6 +188,15 @@ Ext.define("pfv-selector", {
             tpl: '<tpl>{message}</tpl>'
         });
 
+    },
+    
+    _isAMultiSelectField: function(field_name) {
+        var field = this.model.getField(field_name);
+        
+        if ( field.attributeDefinition && field.attributeDefinition.AttributeType == 'COLLECTION' ) {
+            return true;
+        }
+        return false;
     },
     
     _updateLabel: function(cb){

@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Field Value Selector</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Mon Jul 18 2016 17:31:55 GMT-0700 (PDT) -->
+    <!--  Build Date: Sun Jul 24 2016 19:27:48 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Jul 18 2016 17:31:55 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Sun Jul 24 2016 19:27:48 GMT-0700 (PDT)";
         var STORY    = "US410";
-        var BUILDER  = "curmudgeon";
-        var CHECKSUM = 10856691911;
+        var BUILDER  = "jmartin";
+        var CHECKSUM = 12681144545;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -18,7 +18,6 @@
         Rally.onReady(function() {
              
 Ext.define('Rally.technicalservices.common.DashboardFilter',{
-
 
     filterModelType: undefined,
     filterField: undefined,
@@ -45,12 +44,36 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
                 }
             }
             properties.push(this._getFilterFieldProperty())
+            
+            if ( Ext.isArray(this.filterValue) ) {
+                var filters = Ext.Array.map(this.filterValue, function(value){
+                    return {
+                        property: properties.join('.'),
+                        operator: this.filterOperator,
+                        value: value
+                    }
+                },this);
+                
+                return Rally.data.wsapi.Filter.or(filters);
+            }
             return Ext.create('Rally.data.wsapi.Filter', {
                 property: properties.join('.'),
                 operator: this.filterOperator,
                 value: this.filterValue
             });
         } else if (type_idx === idx){
+            if ( Ext.isArray(this.filterValue) ) {
+                var filters = Ext.Array.map(this.filterValue, function(value){
+                    return {
+                        property: this._getFilterFieldProperty(),
+                        operator: this.filterOperator,
+                        value: value
+                    }
+                },this);
+                
+                return Rally.data.wsapi.Filter.or(filters);
+            }
+            
             return Ext.create('Rally.data.wsapi.Filter', {
                 property: this._getFilterFieldProperty(),
                 operator: this.filterOperator,
@@ -466,9 +489,32 @@ Ext.define("pfv-selector", {
     publishedEventName: Rally.technicalservices.common.DashboardFilter.publishedEventName,
 
     launch: function() {
-        this._addSelector(this.getSettings());
-        this.subscribe(this, Rally.technicalservices.common.DashboardFilter.requestEventName, this._requestDashboardFilter, this);
+        this._getModel(this._getModelType()).then({
+            scope: this,
+            success: function(model) {
+                this.model = model;
+                this._addSelector(this.getSettings());
+                this.subscribe(this, Rally.technicalservices.common.DashboardFilter.requestEventName, this._requestDashboardFilter, this);
+            },
+            failure: function(msg) {
+                Ext.Msg.alert('',msg);
+            }
+        });
     },
+    _getModel: function(model_type) {
+        var deferred = Ext.create('Deft.Deferred');
+        Rally.data.ModelFactory.getModel({
+            type: model_type,
+            success: function(model) {
+                deferred.resolve(model);
+            },
+            failure: function(msg) {
+                deferred.reject(msg);
+            }
+        });
+        return deferred.promise;
+    },
+    
     _getModelType: function(){
         return this.getSetting('selectorType');
     },
@@ -518,19 +564,21 @@ Ext.define("pfv-selector", {
     },
     applyState: function(state) {
         if (!Ext.isEmpty(state) && !Ext.Object.isEmpty(state)) {
-            console.log('applyState', state);
             this.setDashboardFilter(state);
         }
     },
     _updateFilter: function(cb){
         if (cb){
-           var df = Ext.create('Rally.technicalservices.common.DashboardFilter');
-            df.filterModelType = this._getModelType();
-            df.filterField = this._getFieldName();
-            df.filterFieldDisplayName = this._getFieldDisplayName();
-            df.filterValue = cb.getValue();
-            
-            df.filterOperator = this._getOperatorForFieldType(this._getFieldType());
+            //if ( !Ext.isArray(cb.getValue())) {
+                
+                var df = Ext.create('Rally.technicalservices.common.DashboardFilter');
+                    df.filterModelType = this._getModelType();
+                    df.filterField = this._getFieldName();
+                    df.filterFieldDisplayName = this._getFieldDisplayName();
+                    df.filterValue = cb.getValue();
+                    
+                    df.filterOperator = this._getOperatorForFieldType(this._getFieldType());
+            //}
             
             this.setDashboardFilter(df);
         }
@@ -539,6 +587,11 @@ Ext.define("pfv-selector", {
         this.dashboardFilter = df;
 
         var filters = df.getFilter(df.filterModelType, []);
+                
+        if ( Ext.isEmpty(filters) ) {
+            this.resultsStatus.update({message: ''});
+            return;
+        }
         
         Rally.technicalservices.WsapiToolbox.fetchWsapiCount(df.filterModelType, filters).then({
             scope: this,
@@ -567,7 +620,7 @@ Ext.define("pfv-selector", {
             padding: 15
         });
 
-        this.fieldValuePicker = ct.add({
+        var picker_config = {
             xtype: 'rallyfieldvaluecombobox',
             model: this._getModelType(),
             field: this._getFieldName(),
@@ -578,7 +631,12 @@ Ext.define("pfv-selector", {
             margin: 15,
             width: 400,
             flex: 1
-        });
+        };
+        
+        if (this._isAMultiSelectField(this._getFieldName()) ) {
+            picker_config.multiSelect = true;
+        }
+        this.fieldValuePicker = ct.add(picker_config);
         
         this.fieldValuePicker.on('ready', this._updateLabel, this, {single: true});
         this.fieldValuePicker.on('change', this._updateFilter, this);
@@ -606,6 +664,15 @@ Ext.define("pfv-selector", {
             tpl: '<tpl>{message}</tpl>'
         });
 
+    },
+    
+    _isAMultiSelectField: function(field_name) {
+        var field = this.model.getField(field_name);
+        
+        if ( field.attributeDefinition && field.attributeDefinition.AttributeType == 'COLLECTION' ) {
+            return true;
+        }
+        return false;
     },
     
     _updateLabel: function(cb){
