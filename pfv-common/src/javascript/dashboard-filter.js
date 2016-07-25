@@ -1,6 +1,5 @@
 Ext.define('Rally.technicalservices.common.DashboardFilter',{
 
-
     filterModelType: undefined,
     filterField: undefined,
     filterValue: undefined,
@@ -26,12 +25,36 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
                 }
             }
             properties.push(this._getFilterFieldProperty())
+            
+            if ( Ext.isArray(this.filterValue) ) {
+                var filters = Ext.Array.map(this.filterValue, function(value){
+                    return {
+                        property: properties.join('.'),
+                        operator: this.filterOperator,
+                        value: value
+                    }
+                },this);
+                
+                return Rally.data.wsapi.Filter.or(filters);
+            }
             return Ext.create('Rally.data.wsapi.Filter', {
                 property: properties.join('.'),
                 operator: this.filterOperator,
                 value: this.filterValue
             });
         } else if (type_idx === idx){
+            if ( Ext.isArray(this.filterValue) ) {
+                var filters = Ext.Array.map(this.filterValue, function(value){
+                    return {
+                        property: this._getFilterFieldProperty(),
+                        operator: this.filterOperator,
+                        value: value
+                    }
+                },this);
+                
+                return Rally.data.wsapi.Filter.or(filters);
+            }
+            
             return Ext.create('Rally.data.wsapi.Filter', {
                 property: this._getFilterFieldProperty(),
                 operator: this.filterOperator,
