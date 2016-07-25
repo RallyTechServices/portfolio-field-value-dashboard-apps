@@ -111,9 +111,7 @@ Ext.define("pfv-selector", {
         this.dashboardFilter = df;
 
         var filters = df.getFilter(df.filterModelType, []);
-        
-        console.log('filters', filters);
-        
+                
         if ( Ext.isEmpty(filters) ) {
             this.resultsStatus.update({message: ''});
             return;

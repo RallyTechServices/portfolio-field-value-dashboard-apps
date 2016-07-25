@@ -3,24 +3,24 @@
 <head>
     <title>Custom Grid</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Mar 31 2016 21:35:20 GMT-0700 (PDT) -->
+    <!--  Build Date: Sun Jul 24 2016 19:53:23 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Mar 31 2016 21:35:20 GMT-0700 (PDT)";
-        var CHECKSUM = 23207837776;
+        var APP_BUILD_DATE = "Sun Jul 24 2016 19:53:23 GMT-0700 (PDT)";
+        var CHECKSUM = 24337866551;
     </script>
     
-    <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
+    <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
 
     <script type="text/javascript">
         Rally.onReady(function() {
              
 Ext.define('Rally.technicalservices.common.DashboardFilter',{
 
-
     filterModelType: undefined,
     filterField: undefined,
     filterValue: undefined,
+    filterOperator: '=',
 
     getFilter: function(resultsRecordType, portfolioItemTypes){
 
@@ -31,7 +31,7 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
             pi_types = portfolioItemTypes.length > 0 ? _.map(portfolioItemTypes, function(pi){return pi.typePath.toLowerCase()}) : [],
             idx = _.indexOf(pi_types, modelType),
             type_idx = _.indexOf(pi_types, resultsRecordType.toLowerCase());
-        console.log('idx', idx,type_idx);
+        //console.log('idx', idx,type_idx);
         if (type_idx < idx) {
             var properties = [];
             for (var i = type_idx; i < idx; i++) {
@@ -42,13 +42,39 @@ Ext.define('Rally.technicalservices.common.DashboardFilter',{
                 }
             }
             properties.push(this._getFilterFieldProperty())
+            
+            if ( Ext.isArray(this.filterValue) ) {
+                var filters = Ext.Array.map(this.filterValue, function(value){
+                    return {
+                        property: properties.join('.'),
+                        operator: this.filterOperator,
+                        value: value
+                    }
+                },this);
+                
+                return Rally.data.wsapi.Filter.or(filters);
+            }
             return Ext.create('Rally.data.wsapi.Filter', {
                 property: properties.join('.'),
+                operator: this.filterOperator,
                 value: this.filterValue
             });
         } else if (type_idx === idx){
+            if ( Ext.isArray(this.filterValue) ) {
+                var filters = Ext.Array.map(this.filterValue, function(value){
+                    return {
+                        property: this._getFilterFieldProperty(),
+                        operator: this.filterOperator,
+                        value: value
+                    }
+                },this);
+                
+                return Rally.data.wsapi.Filter.or(filters);
+            }
+            
             return Ext.create('Rally.data.wsapi.Filter', {
                 property: this._getFilterFieldProperty(),
+                operator: this.filterOperator,
                 value:this.filterValue
             });
         } else {
@@ -984,7 +1010,7 @@ Ext.define("pfv-custom-grid", {
     _shouldEnableAddNew: function() {
         return !_.contains(this.disallowedAddNewTypes, this.getSetting('type').toLowerCase());
     },
-
+    
     _shouldEnableRanking: function(){
         return this.getSetting('type').toLowerCase() !== 'task';
     },

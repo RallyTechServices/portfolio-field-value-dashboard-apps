@@ -1,3 +1,6 @@
+// references: https://github.com/request/request#http-authentication
+// https://www.npmjs.com/package/grunt-http 
+
 module.exports = function(grunt) {
     require('grunt');
     
@@ -10,13 +13,12 @@ module.exports = function(grunt) {
     
         config = grunt.file.readJSON('config.json');
 
-        config.js_files = grunt.file.expand(['../pfv-common/src/javascript/*.js','src/javascript/utils/*.js','src/javascript/*.js']);
-
         config.ugly_files = grunt.file.expand(['deploy/app.min.*.js']);
-
-        config.css_files = grunt.file.expand( '../pfv-common/src/style/*.css','src/style/*.css' );
-        config.checksum = "<!= checksum !>";
         
+        config.js_files = grunt.file.expand(['../pfv-common/src/javascript/*.js','src/javascript/utils/*.js','src/javascript/*.js']);
+        
+        config.css_files = grunt.file.expand( '../pfv-common/src/style/*.css','src/style/*.css' );
+                                
         config.js_contents = " ";
         for (var i=0;i<config.js_files.length;i++) {
             grunt.log.writeln( config.js_files[i]);
@@ -35,7 +37,6 @@ module.exports = function(grunt) {
         }
     }
     if ( grunt.file.exists(auth_file_name) ) {
-    // grunt.log.writeln( config.js_contents );
         var auth = grunt.file.readJSON(auth_file_name);
         config.auth = auth
     } else {
@@ -57,6 +58,12 @@ module.exports = function(grunt) {
                 dev: {
                     src: 'templates/App-debug-tpl.html',
                     dest: 'App-debug.html',
+                    engine: 'underscore',
+                    variables: config
+                },
+                devApiKey: {
+                    src: 'templates/App-debug-apikey-tpl.html',
+                    dest: 'App-debug-apikey.html',
                     engine: 'underscore',
                     variables: config
                 },
@@ -84,6 +91,10 @@ module.exports = function(grunt) {
                     engine: 'underscore',
                     variables: config
                 }
+        },
+        watch: {
+            files: ['src/javascript/**/*.js', 'src/style/*.css'],
+            tasks: ['deploy']
         },
         jasmine: {
             fast: {
@@ -115,30 +126,40 @@ module.exports = function(grunt) {
             }
         }
     });
-    
-    grunt.registerTask('setChecksum', 'Make a sloppy checksum', function() {
-        var fs = require('fs');
-        var chk = 0x12345678,
-            i;
-        var deploy_file = 'deploy/App.txt';
+   
+    grunt.registerTask('setPostBuildInfo', 'Make a sloppy checksum', function() {
+        var fs = require('fs'),
+            username = require('username');
+            chk = 0x12345678,
+            i,
+            deploy_file_name = 'deploy/App.txt';
 
-        var file = grunt.file.read(deploy_file);
-        string = file.replace(/var CHECKSUM = .*;/,"");
+        var deploy_file = grunt.file.read(deploy_file_name);
+
+        string = deploy_file.replace(/var CHECKSUM = .*;/,"");
+        string = string.replace(/var BUILDER  = .*;/,"");
         string = string.replace(/\s/g,"");  //Remove all whitespace from the string.
-        
+
         for (i = 0; i < string.length; i++) {
             chk += (string.charCodeAt(i) * i);
         }
+        var builder = username.sync();
+        grunt.log.writeln('setting builder:', builder);
+
         grunt.log.writeln('sloppy checksum: ' + chk);
         grunt.log.writeln('length: ' + string.length);
 // 
         grunt.template.addDelimiters('square-brackets','[%','%]');
-        
-        var output = grunt.template.process(file, { data: { checksum: chk },  delimiters: 'square-brackets' });
-        grunt.file.write(deploy_file,output);
-        
-    });
+       
+        var data = { checksum: chk, builder: builder }; 
+        var output = grunt.template.process(deploy_file, { 
+            data: data,  
+            delimiters: 'square-brackets' 
+        });
 
+        grunt.file.write(deploy_file_name,output);
+    });
+    
     grunt.registerTask('install', 'Deploy the app to a rally instance', function() {
         
         if ( ! config.auth ) { 
@@ -334,17 +355,20 @@ module.exports = function(grunt) {
 
         
     });
+
     //load
     grunt.loadNpmTasks('grunt-templater');
     grunt.loadNpmTasks('grunt-contrib-jasmine');
     grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-contrib-watch');
+    
     //tasks
     grunt.registerTask('default', ['debug','build','ugly','apikey']);
     
     // (uses all the files in src/javascript)
-    grunt.registerTask('build', "Create the html for deployment",['template:prod','setChecksum']);
+    grunt.registerTask('build', "Create the html for deployment",['template:prod','setPostBuildInfo']);
     // 
-    grunt.registerTask('debug', "Create an html file that can run in its own tab", ['template:dev']);
+    grunt.registerTask('debug', "Create an html file that can run in its own tab", ['template:dev','template:devApiKey']);
     //
     grunt.registerTask('ugly', "Create the ugly html for deployment",['uglify:ugly','template:ugly']);
     //
@@ -352,7 +376,6 @@ module.exports = function(grunt) {
 
     grunt.registerTask('test-fast', "Run tests that don't need to connect to Rally", ['jasmine:fast']);
     grunt.registerTask('test-slow', "Run tests that need to connect to Rally", ['jasmine:slow']);
-    
-    grunt.registerTask('deploy', 'Build and deploy app to the location in auth.json',['build','install']);
 
+    grunt.registerTask('deploy', 'Build and deploy app to the location in auth.json',['build','install']);
 };

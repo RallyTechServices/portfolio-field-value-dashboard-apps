@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Field Value Selector</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Sun Jul 24 2016 19:25:22 GMT-0700 (PDT) -->
+    <!--  Build Date: Sun Jul 24 2016 19:27:48 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sun Jul 24 2016 19:25:22 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Sun Jul 24 2016 19:27:48 GMT-0700 (PDT)";
         var STORY    = "US410";
         var BUILDER  = "jmartin";
-        var CHECKSUM = 12728144048;
+        var CHECKSUM = 12681144545;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -587,9 +587,7 @@ Ext.define("pfv-selector", {
         this.dashboardFilter = df;
 
         var filters = df.getFilter(df.filterModelType, []);
-        
-        console.log('filters', filters);
-        
+                
         if ( Ext.isEmpty(filters) ) {
             this.resultsStatus.update({message: ''});
             return;
