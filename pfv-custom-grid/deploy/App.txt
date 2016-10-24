@@ -3,11 +3,11 @@
 <head>
     <title>Custom Grid</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sun Jul 24 2016 19:53:23 GMT-0700 (PDT) -->
+    <!--  Build Date: Mon Oct 24 2016 15:11:02 GMT-0600 (MDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sun Jul 24 2016 19:53:23 GMT-0700 (PDT)";
-        var CHECKSUM = 24337866551;
+        var APP_BUILD_DATE = "Mon Oct 24 2016 15:11:02 GMT-0600 (MDT)";
+        var CHECKSUM = 24486265943;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -615,17 +615,19 @@ Ext.override(Rally.ui.grid.TreeGrid,{
                             return false;
                         }
                         
-                        return ! Ext.Array.contains(state_column_names, column.dataIndex);
+                        return !Ext.Array.contains(state_column_names, column.dataIndex);
                     }
                     
                     if ( Ext.Array.contains(ignore_column_names, column)){
                         return false;
                     }
-                    return ! Ext.Array.contains(state_column_names, column);
+                    return !Ext.Array.contains(state_column_names, column);
                 });
                 
                 // put unused ones at the end
+
                 this.columnCfgs = Ext.Array.merge(state.columns, unused_cfgs);
+               // console.log('this.columnCfgs', this.columnCfgs);
             }
 
             if (state.sorters && this.storeConfig ) {
@@ -956,7 +958,7 @@ Ext.define("pfv-custom-grid", {
                 ptype: 'rallygridboardfieldpicker',
                 headerPosition: 'left',
                 modelNames: modelNames,
-                gridAlwaysSelectedValues: alwaysSelectedFields,
+                gridAlwaysSelectedValues: ['FormattedID','Name'],  //alwaysSelectedFields,
                 margin: '3 0 0 10'
             },{
                 ptype: 'rallygridboardcustomfiltercontrol',

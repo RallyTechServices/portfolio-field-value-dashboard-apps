@@ -193,7 +193,7 @@ Ext.define("pfv-selector", {
     _isAMultiSelectField: function(field_name) {
         var field = this.model.getField(field_name);
         
-        if ( field.attributeDefinition && field.attributeDefinition.AttributeType == 'COLLECTION' ) {
+        if ( field && field.attributeDefinition && field.attributeDefinition.AttributeType == 'COLLECTION' ) {
             return true;
         }
         return false;

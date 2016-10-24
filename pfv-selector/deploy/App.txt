@@ -3,13 +3,13 @@
 <head>
     <title>Portfolio Field Value Selector</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Sun Jul 24 2016 19:27:48 GMT-0700 (PDT) -->
+    <!--  Build Date: Mon Oct 24 2016 14:54:54 GMT-0600 (MDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sun Jul 24 2016 19:27:48 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Mon Oct 24 2016 14:54:54 GMT-0600 (MDT)";
         var STORY    = "US410";
-        var BUILDER  = "jmartin";
-        var CHECKSUM = 12681144545;
+        var BUILDER  = "kcorkan";
+        var CHECKSUM = 12690831272;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -669,7 +669,7 @@ Ext.define("pfv-selector", {
     _isAMultiSelectField: function(field_name) {
         var field = this.model.getField(field_name);
         
-        if ( field.attributeDefinition && field.attributeDefinition.AttributeType == 'COLLECTION' ) {
+        if ( field && field.attributeDefinition && field.attributeDefinition.AttributeType == 'COLLECTION' ) {
             return true;
         }
         return false;

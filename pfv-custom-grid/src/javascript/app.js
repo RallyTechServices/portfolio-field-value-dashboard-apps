@@ -225,7 +225,7 @@ Ext.define("pfv-custom-grid", {
                 ptype: 'rallygridboardfieldpicker',
                 headerPosition: 'left',
                 modelNames: modelNames,
-                gridAlwaysSelectedValues: alwaysSelectedFields,
+                gridAlwaysSelectedValues: ['FormattedID','Name'],  //alwaysSelectedFields,
                 margin: '3 0 0 10'
             },{
                 ptype: 'rallygridboardcustomfiltercontrol',
