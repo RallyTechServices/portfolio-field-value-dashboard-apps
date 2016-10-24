@@ -27,17 +27,19 @@ Ext.override(Rally.ui.grid.TreeGrid,{
                             return false;
                         }
                         
-                        return ! Ext.Array.contains(state_column_names, column.dataIndex);
+                        return !Ext.Array.contains(state_column_names, column.dataIndex);
                     }
                     
                     if ( Ext.Array.contains(ignore_column_names, column)){
                         return false;
                     }
-                    return ! Ext.Array.contains(state_column_names, column);
+                    return !Ext.Array.contains(state_column_names, column);
                 });
                 
                 // put unused ones at the end
+
                 this.columnCfgs = Ext.Array.merge(state.columns, unused_cfgs);
+               // console.log('this.columnCfgs', this.columnCfgs);
             }
 
             if (state.sorters && this.storeConfig ) {
