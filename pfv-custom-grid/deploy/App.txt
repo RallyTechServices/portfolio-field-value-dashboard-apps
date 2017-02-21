@@ -3,11 +3,11 @@
 <head>
     <title>Custom Grid</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Oct 24 2016 15:11:02 GMT-0600 (MDT) -->
+    <!--  Build Date: Tue Feb 21 2017 12:01:05 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Oct 24 2016 15:11:02 GMT-0600 (MDT)";
-        var CHECKSUM = 24486265943;
+        var APP_BUILD_DATE = "Tue Feb 21 2017 12:01:05 GMT-0800 (PST)";
+        var CHECKSUM = 24482426931;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -978,7 +978,7 @@ Ext.define("pfv-custom-grid", {
                     {
                         text: 'Export...',
                         handler: function() {
-                            window.location = Rally.ui.grid.GridCsvExport.buildCsvExportUrl(
+                            window.location = Rally.ui.gridboard.Export.buildCsvExportUrl(
                                 this.down('rallygridboard').getGridOrBoard());
                         },
                         scope: this
